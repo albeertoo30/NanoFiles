@@ -1,16 +1,21 @@
-# Compiled class file
+# --- Archivos compilados ---
 *.class
+bin/
+build/
 
-# Log file
+# --- Eclipse y herramientas ---
+.metadata/
+.sonarlint/
+.settings/
+.classpath
+.project
+
+# --- Logs y temporales ---
 *.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# --- Empaquetados ---
 *.jar
 *.war
 *.nar
@@ -19,7 +24,10 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# --- Errores de la JVM ---
 hs_err_pid*
 replay_pid*
-/.metadata/
+
+# --- Sistema Operativo ---
+.DS_Store
+Thumbs.db
