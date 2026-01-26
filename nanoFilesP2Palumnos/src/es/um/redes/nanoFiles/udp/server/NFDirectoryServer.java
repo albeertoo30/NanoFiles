@@ -141,15 +141,8 @@ public class NFDirectoryServer {
 		 * cadena "pingok". Si el mensaje recibido no es "ping", se informa del error y
 		 * se envía "invalid" como respuesta.
 		 */
-		String responseMsg = "invalid";
-		if(messageFromClient.equals("ping")) {
-			responseMsg = "pingok";
-		}else {
-			System.err.println("Error. Unexpected message in test mode: " + messageFromClient);
-		}
-		
 		/*
-		 * TODO: (Boletín Estructura-NanoFiles) Ampliar el código para que, en el caso
+		 * DONE: (Boletín Estructura-NanoFiles) Ampliar el código para que, en el caso
 		 * de que la cadena recibida no sea exactamente "ping", comprobar si comienza
 		 * por "ping&" (es del tipo "ping&PROTOCOL_ID", donde PROTOCOL_ID será el
 		 * identificador del protocolo diseñado por el grupo de prácticas (ver
@@ -157,7 +150,19 @@ public class NFDirectoryServer {
 		 * recibida y comprobar que su valor coincide con el de NanoFiles.PROTOCOL_ID,
 		 * en cuyo caso se responderá con "welcome" (en otro caso, "denied").
 		 */
-
+		String responseMsg = "invalid";
+		if(messageFromClient.equals("ping")) {
+			responseMsg = "pingok";
+		}else if(messageFromClient.startsWith("ping&")){
+			String receivedId = messageFromClient.substring(5);
+			if(receivedId.equals(NanoFiles.PROTOCOL_ID)) {
+				responseMsg = "welcome";
+			}else {
+				responseMsg = "denied";
+				System.err.println("Error: Protocol id not recognized");
+			}
+		}
+		
 		
 		/* Envío de la respuesta */
 		

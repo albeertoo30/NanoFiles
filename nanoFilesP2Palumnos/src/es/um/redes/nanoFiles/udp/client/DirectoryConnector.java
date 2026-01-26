@@ -27,7 +27,7 @@ public class DirectoryConnector {
 	 * recuperar el control
 	 */
 	private static final int TIMEOUT = 1000;
-	/**
+	/*
 	 * Número de intentos máximos para obtener del directorio una respuesta a una
 	 * solicitud enviada. Cada vez que expira el timeout sin recibir respuesta se
 	 * cuenta como un intento.
@@ -46,9 +46,6 @@ public class DirectoryConnector {
 	 * Nombre/IP del host donde se ejecuta el directorio
 	 */
 	private String directoryHostname;
-
-
-
 
 
 	public DirectoryConnector(String hostname) throws IOException {
@@ -200,20 +197,34 @@ public class DirectoryConnector {
 	public boolean pingDirectoryRaw() {
 		boolean success = false;
 		/*
-		 * TODO: (Boletín EstructuraNanoFiles) Basándose en el código de
+		 * DONE: (Boletín EstructuraNanoFiles) Basándose en el código de
 		 * "testSendAndReceive", contactar con el directorio, enviándole nuestro
 		 * PROTOCOL_ID (ver clase NanoFiles). Se deben usar mensajes "en crudo" (sin un
 		 * formato bien definido) para la comunicación.
 		 * 
-		 * PASOS: 1.Crear el mensaje a enviar (String "ping&protocolId"). 2.Crear un
-		 * datagrama con los bytes en que se codifica la cadena : 4.Enviar datagrama y
-		 * recibir una respuesta (sendAndReceiveDatagrams). : 5. Comprobar si la cadena
-		 * recibida en el datagrama de respuesta es "welcome", imprimir si éxito o
-		 * fracaso. 6.Devolver éxito/fracaso de la operación.
-		 */
-
-
-
+		 * PASOS: 1.Crear el mensaje a enviar (String "ping&protocolId").*/ 
+		String message = "ping&" + NanoFiles.PROTOCOL_ID;
+		 
+		// 2.Crear un datagrama con los bytes en que se codifica la cadena : 
+		byte[] requestBytes = message.getBytes();
+		
+		// 3.Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams). : 
+		byte[] responseBytes = sendAndReceiveDatagrams(requestBytes); 
+		
+		// 4. Comprobar si la cadena recibida en el datagrama de respuesta es "welcome", imprimir si éxito o fracaso.
+		if(responseBytes != null) {
+			String response = new String(responseBytes);
+			if(response.equals("welcome")) {
+				success = true;
+				System.out.println("PingDirectoryRaw success!");
+			}else {
+				System.err.println("PingDirectoryRaw failed. Response from directory: "+response);
+			}
+		}else {
+			System.err.println("PingDirectoryRaw error");
+		}
+		
+		// 5.Devolver éxito/fracaso de la operación.
 		return success;
 	}
 
