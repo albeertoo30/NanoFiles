@@ -236,19 +236,42 @@ public class DirectoryConnector {
 	 */
 	public boolean pingDirectory() {
 		boolean success = false;
-		/*
-		 * TODO: (Boletín MensajesASCII) Hacer ping al directorio 1.Crear el mensaje a
-		 * enviar (objeto DirMessage) con atributos adecuados (operation, etc.) NOTA:
-		 * Usar como operaciones las constantes definidas en la clase DirMessageOps :
-		 * 2.Convertir el objeto DirMessage a enviar a un string (método toString)
-		 * 3.Crear un datagrama con los bytes en que se codifica la cadena : 4.Enviar
-		 * datagrama y recibir una respuesta (sendAndReceiveDatagrams). : 5.Convertir
-		 * respuesta recibida en un objeto DirMessage (método DirMessage.fromString)
-		 * 6.Extraer datos del objeto DirMessage y procesarlos 7.Devolver éxito/fracaso
-		 * de la operación
-		 */
-
-
+		/* DONE: (Boletín MensajesASCII) Hacer ping al directorio */
+		
+		// 1.Crear el mensaje a enviar (objeto DirMessage) con atributos adecuados (operation, etc.) NOTA:
+		// Usar como operaciones las constantes definidas en la clase DirMessageOps :
+		DirMessage messageToSend = new DirMessage(DirMessageOps.OPERATION_PING);
+		messageToSend.setProtocolID(NanoFiles.PROTOCOL_ID);
+			
+		// 2.Convertir el objeto DirMessage a enviar a un string (método toString)
+		String stringToSend = messageToSend.toString();
+		 
+		// 3.Crear un datagrama con los bytes en que se codifica la cadena :
+		byte[] bytesToSend = stringToSend.getBytes();
+		 
+		// 4.Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams). :
+		byte[] receivedBytes = sendAndReceiveDatagrams(bytesToSend);
+		
+		if(receivedBytes != null) {
+			// 5.Convertir respuesta recibida en un objeto DirMessage (método DirMessage.fromString)
+			String receivedString = new String(receivedBytes);
+			DirMessage receivedMessage = DirMessage.fromString(receivedString);
+			
+			// 6.Extraer datos del objeto DirMessage y procesarlos
+			String operation = receivedMessage.getOperation();
+			if(operation.equals(DirMessageOps.OPERATION_PING_OK)) {
+				System.out.println("PingDirectory: success. Compatible directory");
+				success = true;
+			}else if(operation.equals(DirMessageOps.OPERATION_PING_FAIL)) {
+				System.err.println("PingDirectory: fail. Not compatible protocol");
+			}else {
+				System.err.println("PingDirectory: unexpected response.");
+			}
+		}else {
+			System.err.println("PingDirectory: no response received from Directory");
+		}
+	 
+		// 7.Devolver éxito/fracaso de la operación
 
 		return success;
 	}

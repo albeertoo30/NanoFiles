@@ -1,5 +1,6 @@
 package es.um.redes.nanoFiles.udp.server;
 
+import java.awt.image.DirectColorModel;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -7,6 +8,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.udp.message.DirMessage;
@@ -30,14 +33,19 @@ public class NFDirectoryServer {
 	private DatagramSocket socket = null;
 	
 	/*
-	 * TODO: Añadir aquí como atributos las estructuras de datos que sean necesarias
+	 * DONE: Añadir aquí como atributos las estructuras de datos que sean necesarias
 	 * para mantener en el directorio cualquier información necesaria para la
 	 * funcionalidad del sistema nanoFilesP2P: ficheros publicados, servidores
 	 * registrados, etc.
 	 */
 
-
-
+	// Mapa que asocia el código hash de un fichero con sus datos.
+	// Para el comando filelist.
+	private Map<String, FileInfo> registeredFiles;
+	
+	// Mapa que asocia el código hash de un fichero con el conjunto de servidores que tienen
+	// disponible ese fichero. Para el comando download.
+	private Map<String, Set<InetSocketAddress>> serverSharingFiles;
 
 	/**
 	 * Probabilidad de descartar un mensaje recibido en el directorio (para simular
@@ -59,11 +67,11 @@ public class NFDirectoryServer {
 		this.socket = new DatagramSocket(DIRECTORY_PORT);
 		
 		/*
-		 * TODO: (Boletín SocketsUDP) Inicializar atributos que mantienen el estado del
+		 * DONE: (Boletín SocketsUDP) Inicializar atributos que mantienen el estado del
 		 * servidor de directorio: ficheros, etc.)
 		 */
-		
-
+		this.registeredFiles = new HashMap<>();
+		this.serverSharingFiles = new HashMap<>();
 
 		if (NanoFiles.testModeUDP) {
 			if (socket == null) {
@@ -194,7 +202,7 @@ public class NFDirectoryServer {
 
 	private void sendResponse(DatagramPacket pkt) throws IOException {
 		/*
-		 * TODO: (Boletín MensajesASCII) Construir String partir de los datos recibidos
+		 * DONE: (Boletín MensajesASCII) Construir String partir de los datos recibidos
 		 * en el datagrama pkt. A continuación, imprimir por pantalla dicha cadena a
 		 * modo de depuración. Después, usar la cadena para construir un objeto
 		 * DirMessage que contenga en sus atributos los valores del mensaje. A partir de
@@ -202,56 +210,58 @@ public class NFDirectoryServer {
 		 * métodos "getter" para procesar el mensaje y consultar/modificar el estado del
 		 * servidor.
 		 */
-
-
+		// 1. Extraer el texto del datagrama recibido
+		String stringRecevied = new String(pkt.getData(), 0, pkt.getLength());
+		System.out.println("Data received: " + stringRecevied);
+		
+		// 2. Convertir a objeto DirMessage
+		DirMessage messageReceived = DirMessage.fromString(stringRecevied);
 
 		/*
-		 * TODO: Una vez construido un objeto DirMessage con el contenido del datagrama
+		 * DONE: Una vez construido un objeto DirMessage con el contenido del datagrama
 		 * recibido, obtener el tipo de operación solicitada por el mensaje y actuar en
 		 * consecuencia, enviando uno u otro tipo de mensaje en respuesta.
 		 */
-		String operation = DirMessageOps.OPERATION_INVALID; // TODO: Cambiar!
-
+		String operation = messageReceived.getOperation();
+		
 		/*
-		 * TODO: (Boletín MensajesASCII) Construir un objeto DirMessage (msgToSend) con
+		 * DONE: (Boletín MensajesASCII) Construir un objeto DirMessage (msgToSend) con
 		 * la respuesta a enviar al cliente, en función del tipo de mensaje recibido,
 		 * leyendo/modificando según sea necesario el "estado" guardado en el servidor
 		 * de directorio (atributos files, etc.). Los atributos del objeto DirMessage
 		 * contendrán los valores adecuados para los diferentes campos del mensaje a
 		 * enviar como respuesta (operation, etc.)
 		 */
-
-
-
-
+		DirMessage msgToSend = null;
 
 		switch (operation) {
 		case DirMessageOps.OPERATION_PING: {
-
-
-
-
 			/*
-			 * TODO: (Boletín MensajesASCII) Comprobamos si el protocolId del mensaje del
+			 * DONE: (Boletín MensajesASCII) Comprobamos si el protocolId del mensaje del
 			 * cliente coincide con el nuestro.
 			 */
-			/*
-			 * TODO: (Boletín MensajesASCII) Construimos un mensaje de respuesta que indique
-			 * el éxito/fracaso del ping (compatible, incompatible), y lo devolvemos como
-			 * resultado del método.
-			 */
-			/*
-			 * TODO: (Boletín MensajesASCII) Imprimimos por pantalla el resultado de
-			 * procesar la petición recibida (éxito o fracaso) con los datos relevantes, a
-			 * modo de depuración en el servidor
-			 */
-
-
-
+			String receivedId = messageReceived.getProtocolId();
+			if(receivedId != null && receivedId.equals(NanoFiles.PROTOCOL_ID)) {
+				/*
+				 * DONE: (Boletín MensajesASCII) Construimos un mensaje de respuesta que indique
+				 * el éxito/fracaso del ping (compatible, incompatible), y lo devolvemos como
+				 * resultado del método.
+				 */
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_PING_OK);
+				
+				/*
+				 * DONE: (Boletín MensajesASCII) Imprimimos por pantalla el resultado de
+				 * procesar la petición recibida (éxito o fracaso) con los datos relevantes, a
+				 * modo de depuración en el servidor
+				 */
+				System.out.println("Ping: correct ID. Response PING_OK");
+			}else {
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_PING_FAIL);
+				System.err.println("Ping: invalid ID. Response PING_FAIL");
+			}
+			
 			break;
 		}
-
-
 
 		default:
 			System.err.println("Unexpected message operation: \"" + operation + "\"");
@@ -259,11 +269,17 @@ public class NFDirectoryServer {
 		}
 
 		/*
-		 * TODO: (Boletín MensajesASCII) Convertir a String el objeto DirMessage
+		 * DONE: (Boletín MensajesASCII) Convertir a String el objeto DirMessage
 		 * (msgToSend) con el mensaje de respuesta a enviar, extraer los bytes en que se
 		 * codifica el string y finalmente enviarlos en un datagrama
 		 */
-
+		if(msgToSend != null) {
+			String stringToSend = msgToSend.toString();
+			byte[] bytesToSend = stringToSend.getBytes();
+			InetSocketAddress clientAddr = (InetSocketAddress) pkt.getSocketAddress();
+			DatagramPacket packetToSend = new DatagramPacket(bytesToSend, bytesToSend.length, clientAddr);
+			socket.send(packetToSend);
+		}
 
 
 	}
