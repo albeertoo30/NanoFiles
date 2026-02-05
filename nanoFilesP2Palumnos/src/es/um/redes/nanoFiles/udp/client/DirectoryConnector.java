@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
 
@@ -71,17 +72,18 @@ public class DirectoryConnector {
 		// Guardamos el string con el nombre/IP del host
 		directoryHostname = hostname;
 		/*
-		 * TODO: (Boletín SocketsUDP) Convertir el string 'hostname' a InetAddress y
+		 * DONE: (Boletín SocketsUDP) Convertir el string 'hostname' a InetAddress y
 		 * guardar la dirección de socket (address:DIRECTORY_PORT) del directorio en el
 		 * atributo directoryAddress, para poder enviar datagramas a dicho destino.
 		 */
+		InetAddress address = InetAddress.getByName(hostname);
+		this.directoryAddress = new InetSocketAddress(address, DIRECTORY_PORT);
+		
 		/*
-		 * TODO: (Boletín SocketsUDP) Crea el socket UDP en cualquier puerto para enviar
+		 * DONE: (Boletín SocketsUDP) Crea el socket UDP en cualquier puerto para enviar
 		 * datagramas al directorio
 		 */
-
-
-
+		this.socket = new DatagramSocket();
 	}
 
 	/**
@@ -107,24 +109,56 @@ public class DirectoryConnector {
 			System.exit(-1);
 		}
 		/*
-		 * TODO: (Boletín SocketsUDP) Enviar datos en un datagrama al directorio y
+		 * DONE: (Boletín SocketsUDP) Enviar datos en un datagrama al directorio y
 		 * recibir una respuesta. El array devuelto debe contener únicamente los datos
 		 * recibidos, *NO* el búfer de recepción al completo.
 		 */
+		DatagramPacket packetToServer = new DatagramPacket(requestData, requestData.length, directoryAddress);
+		DatagramPacket packetFromServer = new DatagramPacket(responseData, responseData.length);
+	
 		/*
-		 * TODO: (Boletín SocketsUDP) Una vez el envío y recepción asumiendo un canal
+		 * DONE: (Boletín SocketsUDP) Una vez el envío y recepción asumiendo un canal
 		 * confiable (sin pérdidas) esté terminado y probado, debe implementarse un
 		 * mecanismo de retransmisión usando temporizador, en caso de que no se reciba
 		 * respuesta en el plazo de TIMEOUT. En caso de salte el timeout, se debe volver
 		 * a enviar el datagrama y tratar de recibir respuestas, reintentando como
 		 * máximo en MAX_NUMBER_OF_ATTEMPTS ocasiones.
 		 */
-		/*
-		 * TODO: (Boletín SocketsUDP) Las excepciones que puedan lanzarse al
-		 * leer/escribir en el socket deben ser capturadas y tratadas en este método. Si
-		 * se produce una excepción de entrada/salida (error del que no es posible
-		 * recuperarse), se debe informar y terminar el programa.
-		 */
+		int attempts = 0;
+		boolean received = false;
+		
+		try {
+			socket.setSoTimeout(TIMEOUT);
+			
+			while(!received && attempts < MAX_NUMBER_OF_ATTEMPTS) {
+				try {
+					// Enviar y recibir
+					socket.send(packetToServer);
+					socket.receive(packetFromServer);
+					
+					// Si llegamos aquí significa que hemos recibido algo
+					received = true;
+				} catch (SocketTimeoutException e) {
+					attempts++;
+					System.err.println("Can't receive response. Try " + attempts + "of " + MAX_NUMBER_OF_ATTEMPTS);
+				}
+			}
+			/*
+			 * DONE: (Boletín SocketsUDP) Las excepciones que puedan lanzarse al
+			 * leer/escribir en el socket deben ser capturadas y tratadas en este método. Si
+			 * se produce una excepción de entrada/salida (error del que no es posible
+			 * recuperarse), se debe informar y terminar el programa.
+			 */
+		} catch (IOException e) {
+			System.err.println("IO error: " + e.getMessage());
+			System.exit(-1);
+		}
+		
+		// Extracción de datos
+		if(received) {
+			response = Arrays.copyOf(responseData, packetFromServer.getLength());
+		}
+		
 		/*
 		 * NOTA: Las excepciones deben tratarse de la más concreta a la más genérica.
 		 * SocketTimeoutException es más concreta que IOException.
@@ -147,14 +181,25 @@ public class DirectoryConnector {
 	 */
 	public boolean testSendAndReceive() {
 		/*
-		 * TODO: (Boletín SocketsUDP) Probar el correcto funcionamiento de
+		 * DONE: (Boletín SocketsUDP) Probar el correcto funcionamiento de
 		 * sendAndReceiveDatagrams. Se debe enviar un datagrama con la cadena "ping" y
 		 * comprobar que la respuesta recibida empieza por "pingok". En tal caso,
 		 * devuelve verdadero, falso si la respuesta no contiene los datos esperados.
 		 */
 		boolean success = false;
-
-
+		String message = "ping";
+		byte[] requestBytes = message.getBytes();
+		byte[] responseBytes = sendAndReceiveDatagrams(requestBytes);
+		
+		if(responseBytes != null) {
+			String responseStr = new String(responseBytes);
+			if(responseStr.equals("pingok")) {
+				success = true;
+				System.out.println("Ping test success: received 'pingok'");
+			}else {
+				System.out.println("Ping test without success, received " + responseStr);
+			}
+		}
 
 		return success;
 	}
@@ -172,7 +217,7 @@ public class DirectoryConnector {
 	public boolean pingDirectoryRaw() {
 		boolean success = false;
 		/*
-		 * TODO: (Boletín EstructuraNanoFiles) Basándose en el código de
+		 * DONE: (Boletín EstructuraNanoFiles) Basándose en el código de
 		 * "testSendAndReceive", contactar con el directorio, enviándole nuestro
 		 * PROTOCOL_ID (ver clase NanoFiles). Se deben usar mensajes "en crudo" (sin un
 		 * formato bien definido) para la comunicación.
@@ -184,8 +229,29 @@ public class DirectoryConnector {
 		 * fracaso. 6.Devolver éxito/fracaso de la operación.
 		 */
 
+		// 1.Crear el mensaje a enviar (String "ping&protocolId")
+		String message = "ping&" + NanoFiles.PROTOCOL_ID;
 
+		// 2.Crear un datagrama con los bytes en que se codifica la cadena
+		byte[] requestBytes = message.getBytes();
 
+		// 3.Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams)
+		byte[] responseBytes = sendAndReceiveDatagrams(requestBytes);
+		
+		// 5. Comprobar si la cadena recibida en el datagrama de respuesta es "welcome", imprimir si éxito o fracaso.
+		if(responseBytes != null) {
+			String responseString = new String(responseBytes);
+			if(responseString.equals("welcome")) {
+				success = true;
+				System.out.println("PingDirectoryRaw: success");
+			}else {
+				System.err.println("PingDirectoryRaw: fail");
+			}
+		}else {
+			System.err.println("PingDirectoryRaw error. Empty response from Directory.");
+		}
+		
+		// 6.Devolver éxito/fracaso de la operación.
 		return success;
 	}
 
@@ -208,9 +274,40 @@ public class DirectoryConnector {
 		 * 6.Extraer datos del objeto DirMessage y procesarlos 7.Devolver éxito/fracaso
 		 * de la operación
 		 */
+		
+		// 1.Crear el mensaje a enviar (objeto DirMessage) con atributos adecuados (operation, etc.) NOTA:
+		// Usar como operaciones las constantes definidas en la clase DirMessageOps
+		DirMessage msgToSend = new DirMessage(DirMessageOps.OPERATION_PING);
+		msgToSend.setProtocolID(NanoFiles.PROTOCOL_ID);
+		
+		// 2.Convertir el objeto DirMessage a enviar a un string (método toString)
+		String stringToSend = msgToSend.toString();
+		
+		// 3.Crear un datagrama con los bytes en que se codifica la cadena
+		byte[] bytesToSend = stringToSend.getBytes();
 
-
-
+		// 4.Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams)
+		byte[] bytesReceived = sendAndReceiveDatagrams(bytesToSend);
+		
+		// 5.Convertir respuesta recibida en un objeto DirMessage (método DirMessage.fromString)
+		if(bytesReceived != null) {
+			String stringReceived = new String(bytesReceived);
+			DirMessage msgReceived = DirMessage.fromString(stringReceived); 
+			
+			// 6.Extraer datos del objeto DirMessage y procesarlos
+			String operation = msgReceived.getOperation();
+			if(operation.equals(DirMessageOps.OPERATION_PING_OK)) {
+				success = true;
+				System.out.println("PingDirectory: success. Directory is compatible.");
+			}else if(operation.equals(DirMessageOps.OPERATION_PING_FAIL)) {
+				System.err.println("PingDirectory: fail. Directory is not compatible.");
+			}else {
+				System.err.println("PingDirectory: unexpected response.");
+			}
+		}else {
+			System.err.println("No response received from Directory.");
+		}
+		
 		return success;
 	}
 

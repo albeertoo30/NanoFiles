@@ -23,12 +23,15 @@ public class DirMessage {
 	 */
 	private static final String FIELDNAME_OPERATION = "operation";
 	/*
-	 * TODO: (Boletín MensajesASCII) Definir de manera simbólica los nombres de
+	 * DONE: (Boletín MensajesASCII) Definir de manera simbólica los nombres de
 	 * todos los campos que pueden aparecer en los mensajes de este protocolo
 	 * (formato campo:valor)
 	 */
-
-
+	private static final String FIELDNAME_PROTOCOL = "protocol";
+	private static final String FIELDNAME_NICK = "nick";
+	private static final String FIELDNAME_PORT = "port";
+	private static final String FIELDNAME_FILES = "files";
+	private static final String FIELDNAME_PEERS = "peers";
 
 	/**
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
@@ -39,12 +42,13 @@ public class DirMessage {
 	 */
 	private String protocolId;
 	/*
-	 * TODO: (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
+	 * DONE: (Boletín MensajesASCII) Crear un atributo correspondiente a cada uno de
 	 * los campos de los diferentes mensajes de este protocolo.
 	 */
-
-
-
+	private String nickname;
+	private int port;
+	private String files;
+	private String peers;
 
 	public DirMessage(String op) {
 		operation = op;
@@ -64,7 +68,7 @@ public class DirMessage {
 	}
 
 	/*
-	 * TODO: (Boletín MensajesASCII) Crear métodos getter y setter para obtener los
+	 * DONE: (Boletín MensajesASCII) Crear métodos getter y setter para obtener los
 	 * valores de los atributos de un mensaje. Se aconseja incluir código que
 	 * compruebe que no se modifica/obtiene el valor de un campo (atributo) que no
 	 * esté definido para el tipo de mensaje dado por "operation".
@@ -78,15 +82,53 @@ public class DirMessage {
 	}
 
 	public String getProtocolId() {
-
-
-
 		return protocolId;
 	}
 
+	public String getNickname() {
+		return nickname;
+	}
+	
+	public void setNickname(String nick) {
+		if(!operation.equals(DirMessageOps.OPERATION_SERVE)){
+			throw new RuntimeException("DirMessage: Nickname not allowed in operation " + operation);
+		}
+		this.nickname = nick;
+	}
 
-
-
+	public int getPort() {
+		return port;
+	}
+	
+	public void setPort(int port) {
+		if(!operation.equals(DirMessageOps.OPERATION_SERVE)) {
+			throw new RuntimeException("DirMessage: Port not allowed in operation " + operation);
+		}
+		this.port = port;
+	}
+	
+	public String getFiles() {
+		return files;
+	}
+	
+	public void setFiles(String files) {
+		if(!operation.equals(DirMessageOps.OPERATION_DIRFILES_OK)) {
+			throw new RuntimeException("DirMessage: Files not allowed in operation " + operation);
+		}
+		this.files = files;
+	}
+	
+	public String getPeers() {
+		return peers;
+	}
+	
+	public void setPeers(String peers) {
+		if(!operation.equals(DirMessageOps.OPERATION_PEERS_OK)) {
+			throw new RuntimeException("DirMessage: Peers not allowed in operation " + operation);
+		}
+		this.peers = peers;
+	}
+	
 	/**
 	 * Método que convierte un mensaje codificado como una cadena de caracteres, a
 	 * un objeto de la clase PeerMessage, en el cual los atributos correspondientes
@@ -98,7 +140,7 @@ public class DirMessage {
 	 */
 	public static DirMessage fromString(String message) {
 		/*
-		 * TODO: (Boletín MensajesASCII) Usar un bucle para parsear el mensaje línea a
+		 * DONE: (Boletín MensajesASCII) Usar un bucle para parsear el mensaje línea a
 		 * línea, extrayendo para cada línea el nombre del campo y el valor, usando el
 		 * delimitador DELIMITER, y guardarlo en variables locales.
 		 */
@@ -108,8 +150,6 @@ public class DirMessage {
 		String[] lines = message.split(END_LINE + "");
 		// Local variables to save data during parsing
 		DirMessage m = null;
-
-
 
 		for (String line : lines) {
 			int idx = line.indexOf(DELIMITER); // Posición del delimitador
@@ -122,9 +162,25 @@ public class DirMessage {
 				m = new DirMessage(value);
 				break;
 			}
-
-
-
+			case FIELDNAME_PROTOCOL:{
+				if(m!=null) m.setProtocolID(value);
+				break;
+			}
+			case FIELDNAME_NICK:{
+				if(m!=null) m.setNickname(value);
+			}
+			case FIELDNAME_PORT:{
+				if (m != null) m.setPort(Integer.parseInt(value));
+				break;
+			}
+			case FIELDNAME_FILES:{
+				if (m != null) m.setFiles(value);
+				break;
+			}	
+			case FIELDNAME_PEERS:{
+				if (m != null) m.setPeers(value);
+				break;
+			}
 
 			default:
 				System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
@@ -132,10 +188,7 @@ public class DirMessage {
 				System.exit(-1);
 			}
 		}
-
-
-
-
+		
 		return m;
 	}
 
@@ -151,12 +204,31 @@ public class DirMessage {
 		StringBuffer sb = new StringBuffer();
 		sb.append(FIELDNAME_OPERATION + DELIMITER + operation + END_LINE); // Construimos el campo
 		/*
-		 * TODO: (Boletín MensajesASCII) En función de la operación del mensaje, crear
+		 * DONE: (Boletín MensajesASCII) En función de la operación del mensaje, crear
 		 * una cadena la operación y concatenar el resto de campos necesarios usando los
 		 * valores de los atributos del objeto.
 		 */
-
-
+		switch (operation) {
+		case DirMessageOps.OPERATION_PING:{
+			sb.append(FIELDNAME_PROTOCOL + DELIMITER + protocolId + END_LINE);
+			break;
+		}	
+		case DirMessageOps.OPERATION_SERVE:{
+			sb.append(FIELDNAME_NICK + DELIMITER + nickname + END_LINE);
+			sb.append(FIELDNAME_PORT + DELIMITER + port + END_LINE);
+			break;
+		}
+		case DirMessageOps.OPERATION_DIRFILES_OK:{
+			sb.append(FIELDNAME_FILES + DELIMITER + files + END_LINE);
+			break;
+		}
+		case DirMessageOps.OPERATION_PEERS_OK:{
+			sb.append(FIELDNAME_PEERS + DELIMITER + peers + END_LINE);
+			break;
+		}
+		default:
+			break;
+		}
 
 		sb.append(END_LINE); // Marcamos el final del mensaje
 		return sb.toString();
