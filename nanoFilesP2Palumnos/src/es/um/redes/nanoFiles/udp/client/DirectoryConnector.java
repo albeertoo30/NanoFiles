@@ -321,9 +321,39 @@ public class DirectoryConnector {
 	public boolean registerFileServer(int serverPort) {
 		boolean success = false;
 
-		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
-
-
+		// DONE: Ver TODOs en pingDirectory y seguir esquema similar
+		
+		// 1) Creamos el mensaje
+		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_SERVE);
+		
+		// 2) Establecemos el nickname y el puerto
+		msg.setNickname(NanoFiles.peerNickname);
+		msg.setPort(serverPort);
+		
+		// 3) Serializamos el mensaje y lo envíamos
+		String msgString = msg.toString();
+		byte[] msgBytes = msgString.getBytes();
+		byte[] responseBytes = sendAndReceiveDatagrams(msgBytes);
+		
+		// 4) Procesamos la respuesta
+		if(responseBytes != null) {
+			String responseStr = new String(responseBytes);
+			DirMessage response = DirMessage.fromString(responseStr);
+			if(response.getOperation().equals(DirMessageOps.OPERATION_SERVE_OK)){
+				// Comprobamos si el nickname es distinto
+				String responseNick = response.getNickname();
+				if(responseNick != null && !responseNick.equals(NanoFiles.peerNickname)) {
+					// Si es distinto se actualiza
+					System.out.println("Nickname conflict. Renamed to " + responseNick);
+					NanoFiles.peerNickname = responseNick;
+				}
+				success = true;
+			}else {
+				System.err.println("Serve failed. Directory responded: " + response.getOperation());
+			}
+		}else {
+			System.err.println("Serve error. No response from Directory.");
+		}
 
 		return success;
 	}
@@ -338,7 +368,49 @@ public class DirectoryConnector {
 	public FileInfo[] getFileList() {
 		FileInfo[] filelist = new FileInfo[0];
 		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
-
+		
+		// 1) Crear el mensaje, serializar y enviar
+		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_DIRFILES);
+		String msgString = msg.toString();
+		byte[] msgBytes = msgString.getBytes();
+		byte[] responseBytes = sendAndReceiveDatagrams(msgBytes);
+		
+		// 2) Analizar respuesta
+		if(responseBytes != null) {
+			String responseStr = new String(responseBytes);
+			DirMessage response = DirMessage.fromString(responseStr);
+			String operation = response.getOperation();
+			if(operation.equals(DirMessageOps.OPERATION_DIRFILES_OK)) {
+				String filesStr = response.getFiles();
+				
+				// Deserializar: convertir de String a FileInfo[]
+				if(filesStr != null && !filesStr.isEmpty()) {
+					// Separamos primero por ficheros (; es el separador)
+					String[] filesData = filesStr.split(";");
+					filelist = new FileInfo[filesData.length];
+					
+					// Ahora separamos los campos de cada fichero: hash, nombre y tamaño (: es el separador)
+					for(int i=0; i< filesData.length; i++) {
+						String[] filesParts = filesData[i].split(":");
+						if(filesParts.length >= 3) {
+							String hash = filesParts[0];
+							String name = filesParts[1];
+							long size = Long.parseLong(filesParts[2]);
+							filelist[i] = new FileInfo(hash, name, size, "");
+						}
+					}
+					System.out.println("DirFiles: Received " + filelist.length + " files from Directory.");
+				}else {
+					System.err.println("DirFiles: Directory is empty of files.");
+				}
+			}else {
+				System.err.println("DirFiles fail: " + operation);
+				return null;
+			}
+		}else {
+			System.err.println("DirFiles error: no response from Directory.");
+			return null;
+		}
 
 
 		return filelist;

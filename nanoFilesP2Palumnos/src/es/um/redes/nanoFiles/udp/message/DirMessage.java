@@ -90,7 +90,7 @@ public class DirMessage {
 	}
 	
 	public void setNickname(String nick) {
-		if(!operation.equals(DirMessageOps.OPERATION_SERVE)){
+		if(!operation.equals(DirMessageOps.OPERATION_SERVE) && !operation.equals(DirMessageOps.OPERATION_SERVE_OK)){
 			throw new RuntimeException("DirMessage: Nickname not allowed in operation " + operation);
 		}
 		this.nickname = nick;
@@ -216,6 +216,12 @@ public class DirMessage {
 		case DirMessageOps.OPERATION_SERVE:{
 			sb.append(FIELDNAME_NICK + DELIMITER + nickname + END_LINE);
 			sb.append(FIELDNAME_PORT + DELIMITER + port + END_LINE);
+			break;
+		}
+		case DirMessageOps.OPERATION_SERVE_OK:{
+			if(nickname != null) {
+				sb.append(FIELDNAME_NICK + DELIMITER + nickname + END_LINE);
+			}
 			break;
 		}
 		case DirMessageOps.OPERATION_DIRFILES_OK:{

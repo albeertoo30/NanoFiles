@@ -129,10 +129,11 @@ public class NFControllerLogicDir {
 	protected boolean registerFileServer(int serverPort) {
 		boolean result = false;
 		if (this.directoryConnector.registerFileServer(serverPort)) {
-
-
-
 			System.out.println("* File server successfully registered with the directory");
+			
+			// Imprimimos el nick con el que nos hemos registrado por si acaso ha cambiado
+			System.out.println("* Registered nickname: " + NanoFiles.peerNickname);
+			
 			result = true;
 		} else {
 			System.err.println("* File server failed to register with the directory");

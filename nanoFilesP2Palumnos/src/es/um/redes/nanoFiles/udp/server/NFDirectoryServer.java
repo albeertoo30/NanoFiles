@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.LinkedHashMap;
@@ -252,7 +253,69 @@ public class NFDirectoryServer {
 
 			break;
 		}
-
+		case DirMessageOps.OPERATION_SERVE: {
+			// 1) Extraer los datos del mensaje (nickname y puerto TCP)
+			String nick = msgReceived.getNickname();
+			int port = msgReceived.getPort();
+			
+			// 2) Obtener la IP del paquete
+			InetAddress ipAddress = pkt.getAddress();
+			InetSocketAddress serverAddress = new InetSocketAddress(ipAddress, port);
+			
+			// 3) Gestión de colisones del nickname
+			String finalNick = nick;
+			
+			// Si el nick ya existe, buscamos uno libre (ej: nick1, nick2...)
+			if (registeredPeers.containsKey(nick)) {
+				int i = 1;
+				while (registeredPeers.containsKey(nick + i)) {
+					i++;
+				}
+				finalNick = nick + i;
+				System.out.println("Nickname collision detected: '" + nick + "' renamed to '" + finalNick + "'");
+			}
+			
+			// 4) Registrar el nick en el mapa del directorio
+			registeredPeers.put(finalNick, serverAddress);
+			System.out.println("Server registered: " + finalNick + " -> " + serverAddress);
+			
+			// 5) Preparar la respuesta de éxito
+			msgToSend = new DirMessage(DirMessageOps.OPERATION_SERVE_OK);
+			
+			// Si hemos tenido que renombrar al usuario, se lo indicamos en la respuesta
+			if (!finalNick.equals(nick)) {
+				msgToSend.setNickname(finalNick);
+			}
+			
+			break;
+		}
+		case DirMessageOps.OPERATION_DIRFILES: {
+			// 1) Preparar la respuesta OK
+			msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRFILES_OK);
+			
+			// 2) Serializar: Convertir FileInfo[] -> String
+			StringBuilder sb = new StringBuilder();
+			
+			// Comprobación por si directoryFiles es null, aunque no debería
+			if (directoryFiles != null) {
+				for (FileInfo f : directoryFiles) {
+					sb.append(f.fileHash).append(":")
+					  .append(f.fileName).append(":")
+					  .append(f.fileSize).append(";");
+				}
+			}
+			
+			// 3) Meter la cadena en el mensaje
+			// Solo si hay ficheros, para no enviar "null" o cadena vacía si no es necesario
+			if (sb.length() > 0) {
+				msgToSend.setFiles(sb.toString());
+			} else {
+				msgToSend.setFiles("");
+			}
+			
+			System.out.println("Filelist sent (" + (directoryFiles != null ? directoryFiles.length : 0) + " files)");
+			break;
+		}
 
 
 		default:
