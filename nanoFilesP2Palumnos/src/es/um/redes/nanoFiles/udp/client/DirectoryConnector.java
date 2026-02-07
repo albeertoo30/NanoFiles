@@ -367,7 +367,7 @@ public class DirectoryConnector {
 	 */
 	public FileInfo[] getFileList() {
 		FileInfo[] filelist = new FileInfo[0];
-		// TODO: Ver TODOs en pingDirectory y seguir esquema similar
+		// DONE: Ver TODOs en pingDirectory y seguir esquema similar
 		
 		// 1) Crear el mensaje, serializar y enviar
 		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_DIRFILES);
@@ -419,7 +419,46 @@ public class DirectoryConnector {
 	public Map<String, InetSocketAddress> getPeerList() {
 		Map<String, InetSocketAddress> peers = new LinkedHashMap<String, InetSocketAddress>();
 
-
+		// 1) Crear el mensaje de solicitud
+		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_PEERS);
+		
+		// 2) Enviar y recibir respuesta
+		String msgString = msg.toString();
+		byte[] msgBytes = msgString.getBytes();
+		byte[] responseBytes = sendAndReceiveDatagrams(msgBytes);
+		
+		// 3) Analizamos la respuesta
+		if(responseBytes != null) {
+			String responseStr = new String(responseBytes);
+			DirMessage response = DirMessage.fromString(responseStr);
+			String operation = response.getOperation();
+			if(operation.equals(DirMessageOps.OPERATION_PEERS_OK)) {
+				String peersStr = response.getPeers();
+				if(peersStr != null && !peersStr.isEmpty()) {
+					String[] peerList = peersStr.split(";");
+					for(String peer: peerList) {
+						String[] parts = peer.split(":");
+						if(parts.length >= 3) {
+							String nick = parts[0];
+							String ip = parts[1];
+							try {
+								int port = Integer.parseInt(parts[2]);
+								InetSocketAddress address = new InetSocketAddress(ip, port);
+								peers.put(nick, address);
+							} catch (NumberFormatException e) {
+								System.err.println("Error parsing port for the peer " + nick);
+							}
+						} 
+						
+					}
+				}
+				System.out.println("DirectoryConnector: Received list of " + peers.size() + " peers.");
+			}else {
+				System.err.println("GetPeerList fail. Response from Directory: " + response.getOperation());
+			}
+		}else{
+			System.err.println("GetPeerList: No response from Directory.");
+		}
 
 		return peers;
 	}

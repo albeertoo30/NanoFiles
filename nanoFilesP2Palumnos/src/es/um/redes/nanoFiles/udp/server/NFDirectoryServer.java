@@ -7,7 +7,11 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.udp.message.DirMessage;
@@ -233,7 +237,7 @@ public class NFDirectoryServer {
 			String receivedId = msgReceived.getProtocolId();
 			
 			/*
-			 * TODO: (Boletín MensajesASCII) Construimos un mensaje de respuesta que indique
+			 * DONE: (Boletín MensajesASCII) Construimos un mensaje de respuesta que indique
 			 * el éxito/fracaso del ping (compatible, incompatible), y lo devolvemos como
 			 * resultado del método.
 			 */
@@ -314,6 +318,40 @@ public class NFDirectoryServer {
 			}
 			
 			System.out.println("Filelist sent (" + (directoryFiles != null ? directoryFiles.length : 0) + " files)");
+			break;
+		}
+		case DirMessageOps.OPERATION_PEERS: {
+			// 1) Crear el mensaje de respuesta OK
+			msgToSend = new DirMessage(DirMessageOps.OPERATION_PEERS_OK);
+			
+			// 2. Construir el String con la lista de peers (formato: nick1:IP1:port1;nick2:IP2:port2...)
+			StringBuilder sb = new StringBuilder();
+			
+			// Recorremos el mapa y separamos
+			Iterator<String> it = registeredPeers.keySet().iterator();
+			
+			while (it.hasNext()) {
+				String nick = it.next();
+				InetSocketAddress addr = registeredPeers.get(nick);
+				
+				// Extraemos IP y Puerto
+				String ip = addr.getAddress().getHostAddress();
+				int port = addr.getPort();
+				
+				sb.append(nick).append(":").append(ip).append(":").append(port);
+				
+				// Solo añadimos el punto y coma si quedan más claves por recorrer
+				if (it.hasNext()) {
+					sb.append(";");
+				}
+			}
+			
+			// 3) Establecer el campo 'peers' en el mensaje si la lista no está vacía
+			if (sb.length() > 0) {
+				msgToSend.setPeers(sb.toString());
+			}
+			
+			System.out.println("Enviada lista de peers (" + registeredPeers.size() + " usuarios)");
 			break;
 		}
 
