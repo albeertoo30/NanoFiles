@@ -9,7 +9,6 @@ import java.net.SocketTimeoutException;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import es.um.redes.nanoFiles.tcp.client.NFConnector;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.udp.message.DirMessage;
@@ -49,9 +48,6 @@ public class DirectoryConnector {
 	 * Nombre/IP del host donde se ejecuta el directorio
 	 */
 	private String directoryHostname;
-
-
-
 
 
 	public static class DownloadedFile {
