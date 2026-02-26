@@ -264,7 +264,7 @@ public class DirectoryConnector {
 	public boolean pingDirectory() {
 		boolean success = false;
 		/*
-		 * TODO: (Boletín MensajesASCII) Hacer ping al directorio 1.Crear el mensaje a
+		 * DONE: (Boletín MensajesASCII) Hacer ping al directorio 1.Crear el mensaje a
 		 * enviar (objeto DirMessage) con atributos adecuados (operation, etc.) NOTA:
 		 * Usar como operaciones las constantes definidas en la clase DirMessageOps :
 		 * 2.Convertir el objeto DirMessage a enviar a un string (método toString)
