@@ -8,28 +8,33 @@ public class PeerMessageOps {
 	public static final byte OPCODE_INVALID_CODE = 0;
 
 	/*
-	 * TODO: (Boletín MensajesBinarios) Añadir aquí todas las constantes que definen
+	 * DONE: (Boletín MensajesBinarios) Añadir aquí todas las constantes que definen
 	 * los diferentes tipos de mensajes del protocolo de comunicación con un par
 	 * servidor de ficheros (valores posibles del campo "operation").
 	 */
-
-
-
+	public static final byte OPCODE_PEERFILES_REQ = 0x10;
+	public static final byte OPCODE_PEERFILES_RESP = 0x11;
+	
+	public static final byte OPCODE_DOWNLOAD_REQ = 0x20;
+	public static final byte OPCODE_DOWNLOAD_RESP = 0x21; // Contiene los metadatos antes del fichero
+	public static final byte OPCODE_FILE_NOT_FOUND = 0x22;
+	public static final byte OPCODE_AMBIGUOUS_HASH = 0x23;
+	
 
 	/*
-	 * TODO: (Boletín MensajesBinarios) Definir constantes con nuevos opcodes de
+	 * DONE: (Boletín MensajesBinarios) Definir constantes con nuevos opcodes de
 	 * mensajes definidos anteriormente, añadirlos al array "valid_opcodes" y añadir
 	 * su representación textual a "valid_operations_str" EN EL MISMO ORDEN.
 	 */
 	private static final Byte[] _valid_opcodes = { OPCODE_INVALID_CODE,
-
-
-
+					OPCODE_PEERFILES_REQ, OPCODE_PEERFILES_RESP,
+					OPCODE_DOWNLOAD_REQ, OPCODE_DOWNLOAD_RESP,
+					OPCODE_FILE_NOT_FOUND, OPCODE_AMBIGUOUS_HASH
 	};
+	
 	private static final String[] _valid_operations_str = { "INVALID_OPCODE",
-
-
-
+					"PEERFILES_REQ", "PEERFILES_RESP", "DOWNLOAD_REQ",
+					"DOWNLOAD_RESP", "FILE_NOT_FOUND", "AMBIGUOUS_HASH"
 	};
 
 	private static Map<String, Byte> _operation_to_opcode;
