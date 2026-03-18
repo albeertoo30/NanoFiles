@@ -36,7 +36,7 @@ public class NFControllerLogicP2P {
 			System.err.println("File server is already running");
 		} else {
 			/*
-			 * TODO: (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
+			 * DONE: (Boletín Servidor TCP concurrente) Arrancar servidor en segundo plano
 			 * creando un nuevo hilo, comprobar que el servidor está escuchando en un puerto
 			 * válido (>0), imprimir mensaje informando sobre el puerto de escucha, y
 			 * devolver verdadero. Las excepciones que puedan lanzarse deben ser capturadas
@@ -45,9 +45,16 @@ public class NFControllerLogicP2P {
 			 * programa
 			 * 
 			 */
-
-
-
+			try {
+				fileServer = new NFServer();
+				fileServer.startServer();
+				if(fileServer.getServerPort() > 0) {
+					serverRunning = true;
+				}
+			} catch (IOException e) {
+				System.err.println("Error. Could not initialize file server: " + e.getMessage());
+				fileServer = null;
+			}
 
 		}
 		return serverRunning;
@@ -175,10 +182,11 @@ public class NFControllerLogicP2P {
 	protected int getServerPort() {
 		int port = 0;
 		/*
-		 * TODO: Devolver el puerto de escucha de nuestro servidor de ficheros
+		 * DONE: Devolver el puerto de escucha de nuestro servidor de ficheros
 		 */
-
-
+		if(fileServer != null) {
+			port = fileServer.getServerPort();
+		}
 
 		return port;
 	}
@@ -189,20 +197,23 @@ public class NFControllerLogicP2P {
 	 */
 	protected void stopFileServer() {
 		/*
-		 * TODO: Enviar señal para detener nuestro servidor de ficheros en segundo plano
+		 * DONE: Enviar señal para detener nuestro servidor de ficheros en segundo plano
 		 */
-
-
-
+		if(fileServer != null) {
+			fileServer.stopServer();
+			fileServer = null;
+			System.out.println("Local file server stopped.");
+		}
 	}
 
 	protected boolean serving() {
 		boolean result = false;
-
-
+		
+			if(fileServer != null) {
+				result = true;
+			}
 
 		return result;
-
 	}
 
 }
