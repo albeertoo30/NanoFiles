@@ -145,8 +145,21 @@ public class NFControllerLogicDir {
 	}
 
 
-
-
+	/**
+	 * Método para obtener la dirección (IP y puerto) de un peer a partir de su nickname.
+	 * Consulta el censo de pares al directorio.
+	 * * @param nickname El nickname del peer a buscar
+	 * @return La dirección del peer, o null si no se encuentra o hay error
+	 */
+	protected InetSocketAddress getPeerAddress(String nickname) {
+		// Obtenemos el diccionario completo de peers registrados en el directorio
+		Map<String, InetSocketAddress> peers = fetchPeerList();
+		
+		if (peers != null && peers.containsKey(nickname)) {
+			return peers.get(nickname);
+		}
+		return null;
+	}
 
 	/**
 	 * Método para descargar un fichero del directorio y guardarlo con su nombre

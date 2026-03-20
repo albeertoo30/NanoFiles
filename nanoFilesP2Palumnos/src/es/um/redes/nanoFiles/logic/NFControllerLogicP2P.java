@@ -1,8 +1,11 @@
 package es.um.redes.nanoFiles.logic;
 
 import java.net.InetSocketAddress;
+import java.io.File;
 import java.io.IOException;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
+import es.um.redes.nanoFiles.tcp.message.PeerMessage;
+import es.um.redes.nanoFiles.tcp.message.PeerMessageOps;
 import es.um.redes.nanoFiles.application.NanoFiles;
 
 
@@ -72,7 +75,7 @@ public class NFControllerLogicP2P {
 
 			fileServer = new NFServer();
 			/*
-			 * (Boletín SocketsTCP) Inicialmente, se creará un NFServer y se ejecutará su
+			 * DONE (Boletín SocketsTCP) Inicialmente, se creará un NFServer y se ejecutará su
 			 * método "test" (servidor minimalista en primer plano, que sólo puede atender a
 			 * un cliente conectado). Posteriormente, se desactivará "testModeTCP" para
 			 * implementar un servidor en segundo plano, que se ejecute en un hilo
@@ -92,7 +95,7 @@ public class NFControllerLogicP2P {
 
 		assert (NanoFiles.testModeTCP);
 		/*
-		 * (Boletín SocketsTCP) Inicialmente, se creará un NFConnector (cliente TCP)
+		 * DONE (Boletín SocketsTCP) Inicialmente, se creará un NFConnector (cliente TCP)
 		 * para conectarse a un servidor que esté escuchando en la misma máquina y un
 		 * puerto fijo. Después, se ejecutará el método "test" para comprobar la
 		 * comunicación mediante el socket TCP. Posteriormente, se desactivará
@@ -104,7 +107,6 @@ public class NFControllerLogicP2P {
 			NFConnector nfConnector = new NFConnector(new InetSocketAddress(NFServer.PORT));
 			nfConnector.test();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -119,8 +121,23 @@ public class NFControllerLogicP2P {
 	 */
 	protected boolean listPeerFiles(InetSocketAddress peerAddr) {
 		boolean success = false;
-
-
+		try {
+			System.out.println("*Trying to connect with peer " + peerAddr);
+			NFConnector connector = new NFConnector(peerAddr);
+			
+			PeerMessage response = connector.requestPeerFiles();
+			if(response.getOpcode() == PeerMessageOps.OPCODE_PEERFILES_RESP) {
+				System.out.println("Files shared from the peer: ");
+				System.out.println(response.getFileList());
+				success = true;
+			}else {
+				System.err.println("Unexpected response code from the peer.");
+			}
+			
+			connector.close();
+		} catch (IOException e) {
+			System.err.println("Communication or conexion error with the peer: " + e.getMessage());
+		}
 
 		return success;
 	}
@@ -132,11 +149,17 @@ public class NFControllerLogicP2P {
 	 */
 	protected boolean downloadFromPeers(NFControllerLogicDir dirLogic, String targetPeerNickname,
 			String targetHashSubstring) {
-		// TODO: localizar peers con el hash solicitado (o uno concreto) y delegar en
+		// DONE: localizar peers con el hash solicitado (o uno concreto) y delegar en
 		// downloadFileFromServers
 		boolean success = false;
 
-
+		InetSocketAddress peerAddr = dirLogic.getPeerAddress(targetPeerNickname);
+		if(peerAddr != null) {
+			InetSocketAddress[] servers = { peerAddr };
+			success = downloadFileFromServers(servers, targetHashSubstring);
+		}else {
+			System.err.println("*Could not resolve peer direction: " + targetPeerNickname);
+		}
 
 		return success;
 	}
@@ -155,12 +178,47 @@ public class NFControllerLogicP2P {
 			System.err.println("* Cannot start download - No list of server addresses provided");
 			return false;
 		}
-		// TODO: crear conectores TCP solo a los servidores que confirmen el hash
+		// DONE: crear conectores TCP solo a los servidores que confirmen el hash
 		// pedido, obtener nombre remoto, reservar nombre local sin colisiones, alternar
 		// descarga de chunks y verificar hash final. Cerrar los sockets al terminar.
+		for(InetSocketAddress serverAddr : serverAddressList) {
+			try {
+				NFConnector connector = new NFConnector(serverAddr);
+				PeerMessage response = connector.requestDownload(targetHashSubstring);
+				if(response.getOpcode() == PeerMessageOps.OPCODE_DOWNLOAD_RESP) {
+					String fullHash = response.getHash();
+					long expectedSize = response.getFileSize();
+					
+					File downloadFolder = new File(NanoFiles.sharedDirname);
+					downloadFolder.mkdirs();
+					
+					String localFileName = "descarga_" + fullHash.substring(0,7) + ".bin";
+					File localFile = new File(downloadFolder, localFileName);
+					
+					int index = 1;		
+					while(localFile.exists()) {
+						localFileName = "descarga_" + fullHash.substring(0, 7) + "_" + index + ".bin";
+						localFile = new File(downloadFolder, localFileName);
+					}
+					
+					System.out.println("*Downloading file (Expected size: " + expectedSize + " bytes)...");
+					connector.downloadFileStreaming(localFile, expectedSize);
+					System.out.println("*Download completed successfully in: " + toDisplayPath(localFile.toPath()));
+					
+					downloaded = true;
+					connector.close();
+					break;
+				}else if(response.getOpcode() == PeerMessageOps.OPCODE_FILE_NOT_FOUND) {
+					System.err.println("The peer does not contain any file matching with " + targetHashSubstring);
+				}else if(response.getOpcode() == PeerMessageOps.OPCODE_AMBIGUOUS_HASH) {
+					System.err.println("The peer contains several files matching with the substring");
+				}
+				connector.close();
+			} catch (IOException e) {
+				System.err.println("* Error trying to download from server " + serverAddr + ": " + e.getMessage());
+			}
 
-
-
+		}
 
 		return downloaded;
 	}
