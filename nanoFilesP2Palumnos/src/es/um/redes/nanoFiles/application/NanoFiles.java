@@ -24,7 +24,7 @@ public class NanoFiles {
 	 * Flag para pruebas iniciales con TCP, desactivado una vez que la comunicación
 	 * cliente-servidor de ficheros está implementada y probada.
 	 */
-	public static boolean testModeTCP = true;
+	public static boolean testModeTCP = false;
 	public static String peerNickname;
 
 	public static void main(String[] args) {

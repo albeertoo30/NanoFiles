@@ -168,6 +168,7 @@ public class DirMessage {
 			}
 			case FIELDNAME_NICK:{
 				if(m!=null) m.setNickname(value);
+				break;
 			}
 			case FIELDNAME_PORT:{
 				if (m != null) m.setPort(Integer.parseInt(value));

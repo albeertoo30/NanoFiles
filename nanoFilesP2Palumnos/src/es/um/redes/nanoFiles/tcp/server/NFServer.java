@@ -104,7 +104,16 @@ public class NFServer implements Runnable {
 				 * implementar en el método serveFilesToClient, al cual hay que pasarle el
 				 * socket devuelto por accept.
 				 */
-				serveFilesToClient(clientSocket);
+				DataInputStream dis = new DataInputStream(clientSocket.getInputStream());
+				DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+				
+				int numRecibido = dis.readInt();
+				System.out.println("[fileServerTestMode] Recibido entero de prueba: " + numRecibido);
+				
+				dos.writeInt(numRecibido);
+				dos.flush();
+				clientSocket.close();
+				
 			} catch (IOException e) {
 				System.err.println("[fileServerTestMode] Error aceptando conexión: " + e.getMessage());
 			}

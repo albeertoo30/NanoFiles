@@ -138,8 +138,12 @@ public class NFController {
 			commandSucceeded = controllerPeer.listPeerFiles(peerAddr);
 			break;
 		case NFCommands.COM_DOWNLOAD_PEER:
-			commandSucceeded = controllerPeer.downloadFromPeers(controllerDir, targetPeerNickname,
+			if(NanoFiles.testModeTCP) {
+				controllerPeer.testTCPClient();
+			}else {
+				commandSucceeded = controllerPeer.downloadFromPeers(controllerDir, targetPeerNickname,
 					targetHashSubstring);
+			}
 			break;
 		case NFCommands.COM_SERVE:
 			/*
