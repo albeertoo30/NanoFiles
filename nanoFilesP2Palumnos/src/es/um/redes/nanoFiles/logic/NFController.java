@@ -11,12 +11,13 @@ public class NFController {
 	/**
 	 * Diferentes estados del cliente de acuerdo con el autómata
 	 */
-	private static final byte OFFLINE = 0;
+	private static final byte OFFLINE = 0; // estado q0 en el autómata
 	/*
-	 * TODO: (Boletín Autómatas) Añadir más constantes que representen los estados
+	 * DONE: (Boletín Autómatas) Añadir más constantes que representen los estados
 	 * del autómata del cliente de directorio.
 	 */
-
+	private static final byte CONNECTED = 1; // estado q3 en el autómata (tras pingok)
+	private static final byte REGISTERED = 2; // estado q8 en el autómata (tras serveok)
 	/**
 	 * Shell para leer comandos de usuario de la entrada estándar
 	 */
@@ -209,7 +210,7 @@ public class NFController {
 	 */
 	private boolean canProcessCommandInCurrentState() {
 		/*
-		 * TODO: (Boletín Autómatas) Para cada comando tecleado en el shell
+		 * DONE: (Boletín Autómatas) Para cada comando tecleado en el shell
 		 * (currentCommand), comprobar "currentState" para ver si dicho comando es
 		 * válido según el estado actual del autómata, ya que no todos los comandos
 		 * serán válidos en cualquier estado. Este método NO debe modificar
@@ -217,20 +218,52 @@ public class NFController {
 		 */
 		boolean commandAllowed = true;
 		switch (currentCommand) {
-		case NFCommands.COM_MYFILES: {
+		case NFCommands.COM_MYFILES:
+		case NFCommands.COM_QUIT:
 			commandAllowed = true;
 			break;
-		}
+
+		case NFCommands.COM_PING:
+		case NFCommands.COM_NICK:
+			if (currentState != OFFLINE) {
+				System.err.println("* Error: Command not allowed. You are already connected or serving.");
+				commandAllowed = false;
+			}
+			break;
+			
+		case NFCommands.COM_FILELIST_DIR:
+		case NFCommands.COM_DOWNLOAD_DIR:
+			if (currentState == OFFLINE) {
+				System.err.println("* Error: You should check if you are connected to Directory (use 'ping').");
+				commandAllowed = false;
+			}
+			break;
+			
+		case NFCommands.COM_SERVE:
+			if (currentState != CONNECTED) {
+				System.err.println("* Error: For serving you should do 'ping' first, or may be you are already serving.");
+				commandAllowed = false;
+			}
+			break;
+			
+		case NFCommands.COM_PEERLIST:
+		case NFCommands.COM_FILELIST_PEER:
+		case NFCommands.COM_DOWNLOAD_PEER:
+			if (currentState != REGISTERED) {
+				System.err.println("* Error: You should register as a server ('serve') for seeing the peers.");
+				commandAllowed = false;
+			}
+			break;
 		default:
-			// System.err.println("ERROR: undefined behaviour for " + currentCommand + "
-			// command!");
+			System.err.println("ERROR: undefined behaviour for " + currentCommand);
+			commandAllowed = false;
 		}
 		return commandAllowed;
 	}
 
 	private void updateCurrentState(boolean success) {
 		/*
-		 * TODO: (Boletín Autómatas) Si el comando ha sido procesado con éxito, debemos
+		 * DONE: (Boletín Autómatas) Si el comando ha sido procesado con éxito, debemos
 		 * actualizar currentState de acuerdo con el autómata diseñado para pasar al
 		 * siguiente estado y así permitir unos u otros comandos en cada caso.
 		 */
@@ -238,7 +271,16 @@ public class NFController {
 			return;
 		}
 		switch (currentCommand) {
+		case NFCommands.COM_PING:
+			currentState = CONNECTED;
+			break;
+		case NFCommands.COM_SERVE:
+			currentState = REGISTERED;
+		case NFCommands.COM_QUIT:
+			currentState = OFFLINE;
+			break;
 		default:
+			break;
 		}
 
 	}

@@ -150,7 +150,7 @@ public class PeerMessage {
 
 	public void writeMessageToOutputStream(DataOutputStream dos) throws IOException {
 		/*
-		 * TODO (Boletín MensajesBinarios): Escribir los bytes en los que se codifica el
+		 * DONE (Boletín MensajesBinarios): Escribir los bytes en los que se codifica el
 		 * mensaje en el socket a través del "dos", teniendo en cuenta opcode del
 		 * mensaje del que se trata y los campos relevantes en cada caso. NOTA: Usar
 		 * dos.write para leer un array de bytes, dos.writeInt para escribir un entero,

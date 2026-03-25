@@ -55,13 +55,25 @@ public class DirMessage {
 	}
 
 	/*
-	 * TODO: (Boletín MensajesASCII) Crear diferentes constructores adecuados para
+	 * DONE: (Boletín MensajesASCII) Crear diferentes constructores adecuados para
 	 * construir mensajes de diferentes tipos con sus correspondientes argumentos
 	 * (campos del mensaje)
 	 */
 
+	/* Constructor para el mensaje de registro de un servidor (SERVE).
+	 Permite encapsular la operación, el nick y el puerto en una sola línea. */
+	public DirMessage(String op, String nickname, int port) {
+		this.operation = op;
+		this.nickname = nickname;
+		this.port = port;
+	}
 
-
+	/*Constructor para los mensajes de PING o cualquier otro que requiera enviar la 
+	 operación y el ID del protocolo. */
+	public DirMessage(String op, String protocolId) {
+		this.operation = op;
+		this.protocolId = protocolId;
+	}
 
 	public String getOperation() {
 		return operation;

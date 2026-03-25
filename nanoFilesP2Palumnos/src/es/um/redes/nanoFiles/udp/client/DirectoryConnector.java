@@ -225,16 +225,16 @@ public class DirectoryConnector {
 		 * fracaso. 6.Devolver éxito/fracaso de la operación.
 		 */
 
-		// 1.Crear el mensaje a enviar (String "ping&protocolId")
+		// 1) Crear el mensaje a enviar (String "ping&protocolId")
 		String message = "ping&" + NanoFiles.PROTOCOL_ID;
 
-		// 2.Crear un datagrama con los bytes en que se codifica la cadena
+		// 2) Crear un datagrama con los bytes en que se codifica la cadena
 		byte[] requestBytes = message.getBytes();
 
-		// 3.Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams)
+		// 3) Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams)
 		byte[] responseBytes = sendAndReceiveDatagrams(requestBytes);
 		
-		// 5. Comprobar si la cadena recibida en el datagrama de respuesta es "welcome", imprimir si éxito o fracaso.
+		// 4) Comprobar si la cadena recibida en el datagrama de respuesta es "welcome", imprimir si éxito o fracaso.
 		if(responseBytes != null) {
 			String responseString = new String(responseBytes);
 			if(responseString.equals("welcome")) {
@@ -247,7 +247,7 @@ public class DirectoryConnector {
 			System.err.println("PingDirectoryRaw error. Empty response from Directory.");
 		}
 		
-		// 6.Devolver éxito/fracaso de la operación.
+		// 5) Devolver éxito/fracaso de la operación.
 		return success;
 	}
 
@@ -271,26 +271,26 @@ public class DirectoryConnector {
 		 * de la operación
 		 */
 		
-		// 1.Crear el mensaje a enviar (objeto DirMessage) con atributos adecuados (operation, etc.) NOTA:
+		// 1) Crear el mensaje a enviar (objeto DirMessage) con atributos adecuados (operation, etc.) NOTA:
 		// Usar como operaciones las constantes definidas en la clase DirMessageOps
-		DirMessage msgToSend = new DirMessage(DirMessageOps.OPERATION_PING);
-		msgToSend.setProtocolID(NanoFiles.PROTOCOL_ID);
+		DirMessage msgToSend = new DirMessage(DirMessageOps.OPERATION_PING, NanoFiles.PROTOCOL_ID);
+		// msgToSend.setProtocolID(NanoFiles.PROTOCOL_ID); -> con el nuevo constructor no hace falta
 		
-		// 2.Convertir el objeto DirMessage a enviar a un string (método toString)
+		// 2) Convertir el objeto DirMessage a enviar a un string (método toString)
 		String stringToSend = msgToSend.toString();
 		
-		// 3.Crear un datagrama con los bytes en que se codifica la cadena
+		// 3) Crear un datagrama con los bytes en que se codifica la cadena
 		byte[] bytesToSend = stringToSend.getBytes();
 
-		// 4.Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams)
+		// 4) Enviar datagrama y recibir una respuesta (sendAndReceiveDatagrams)
 		byte[] bytesReceived = sendAndReceiveDatagrams(bytesToSend);
 		
-		// 5.Convertir respuesta recibida en un objeto DirMessage (método DirMessage.fromString)
+		// 5) Convertir respuesta recibida en un objeto DirMessage (método DirMessage.fromString)
 		if(bytesReceived != null) {
 			String stringReceived = new String(bytesReceived);
 			DirMessage msgReceived = DirMessage.fromString(stringReceived); 
 			
-			// 6.Extraer datos del objeto DirMessage y procesarlos
+			// 6) Extraer datos del objeto DirMessage y procesarlos
 			String operation = msgReceived.getOperation();
 			if(operation.equals(DirMessageOps.OPERATION_PING_OK)) {
 				success = true;
@@ -320,11 +320,11 @@ public class DirectoryConnector {
 		// DONE: Ver TODOs en pingDirectory y seguir esquema similar
 		
 		// 1) Creamos el mensaje
-		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_SERVE);
+		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_SERVE, NanoFiles.peerNickname, serverPort);
 		
-		// 2) Establecemos el nickname y el puerto
-		msg.setNickname(NanoFiles.peerNickname);
-		msg.setPort(serverPort);
+		// 2) Establecemos el nickname y el puerto -> con el nuevo constructor no hace falta
+		// msg.setNickname(NanoFiles.peerNickname);
+		// msg.setPort(serverPort);
 		
 		// 3) Serializamos el mensaje y lo envíamos
 		String msgString = msg.toString();

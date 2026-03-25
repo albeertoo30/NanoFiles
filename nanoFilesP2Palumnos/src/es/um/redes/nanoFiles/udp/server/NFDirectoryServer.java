@@ -29,7 +29,7 @@ public class NFDirectoryServer {
 	 */
 	private DatagramSocket socket = null;
 	/*
-	 * TODO: Añadir aquí como atributos las estructuras de datos que sean necesarias
+	 * DONE: Añadir aquí como atributos las estructuras de datos que sean necesarias
 	 * para mantener en el directorio cualquier información necesaria para la
 	 * funcionalidad del sistema nanoFilesP2P: ficheros alojados, servidores
 	 * registrados, etc.

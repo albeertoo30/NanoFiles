@@ -137,9 +137,6 @@ public class NFControllerLogicDir {
 			result = true;
 		} else {
 			System.err.println("* File server failed to register with the directory");
-
-
-
 		}
 		return result;
 	}
