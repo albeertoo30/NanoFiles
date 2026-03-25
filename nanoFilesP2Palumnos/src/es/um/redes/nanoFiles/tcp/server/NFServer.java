@@ -23,7 +23,6 @@ public class NFServer implements Runnable {
 
 	public static final int PORT = 10000;
 
-
 	private ServerSocket serverSocket = null;
 	
 	// Bandera para poder apagar el hilo principal
@@ -34,14 +33,19 @@ public class NFServer implements Runnable {
 		 * DONE: (Boletín SocketsTCP) Crear una direción de socket a partir del puerto
 		 * especificado (PORT)
 		 */
-		InetSocketAddress socketAddress = new InetSocketAddress(PORT);
+		//InetSocketAddress socketAddress = new InetSocketAddress(PORT);
 	
 		/*
 		 * DONE: (Boletín SocketsTCP) Crear un socket servidor y ligarlo a la dirección
 		 * de socket anterior
 		 */
-		this.serverSocket = new ServerSocket();
-		this.serverSocket.bind(socketAddress);
+		if(NanoFiles.testModeTCP) {
+			this.serverSocket = new ServerSocket(PORT);
+		}else {
+			this.serverSocket = new ServerSocket(0);
+		}
+		int puertoAsignado = this.serverSocket.getLocalPort();
+		System.out.println("* You are now serving files on port " + puertoAsignado);
 	}
 
 	/*
@@ -54,7 +58,7 @@ public class NFServer implements Runnable {
 	public void startServer() {
 		Thread nuevoHilo = new Thread(this);
 		nuevoHilo.start();
-		System.out.println("*Servidor TCP iniciado en segundo plano en el puerto " + PORT);
+		System.out.println("*Servidor TCP iniciado en segundo plano en el puerto " + getServerPort());
 	}
 	
 	// Método para detener el servidor 
@@ -238,7 +242,8 @@ public class NFServer implements Runnable {
 								
 							// Enviamos primero la cabecera (metadatos)
 							PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_DOWNLOAD_RESP);
-							response.setHash(targetFile.fileHash);
+							String hashAndName = targetFile.fileHash + ":" + targetFile.fileName;
+							response.setHash(hashAndName);
 							response.setFileSize(file.length());
 							response.writeMessageToOutputStream(dos);
 							
@@ -248,6 +253,8 @@ public class NFServer implements Runnable {
 							int bytesRead = fis.read(buffer);
 							while(bytesRead > 0) {
 								dos.write(buffer, 0, bytesRead);
+								// Volvemos a leer para avanzar en el fichero. Si ya no hay más, devuelve -1 y sale del bucle
+								bytesRead = fis.read(buffer);
 							}
 							fis.close();
 							dos.flush();

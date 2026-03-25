@@ -276,6 +276,7 @@ public class NFController {
 			break;
 		case NFCommands.COM_SERVE:
 			currentState = REGISTERED;
+			break;
 		case NFCommands.COM_QUIT:
 			currentState = OFFLINE;
 			break;

@@ -1,6 +1,7 @@
 package es.um.redes.nanoFiles.logic;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.io.File;
 import java.io.IOException;
 import es.um.redes.nanoFiles.tcp.client.NFConnector;
@@ -11,6 +12,7 @@ import es.um.redes.nanoFiles.application.NanoFiles;
 
 
 import es.um.redes.nanoFiles.tcp.server.NFServer;
+import es.um.redes.nanoFiles.util.FileInfo;
 
 public class NFControllerLogicP2P {
 	// Servidor TCP local para compartir ficheros con otros peers
@@ -128,7 +130,36 @@ public class NFControllerLogicP2P {
 			PeerMessage response = connector.requestPeerFiles();
 			if(response.getOpcode() == PeerMessageOps.OPCODE_PEERFILES_RESP) {
 				System.out.println("Files shared from the peer: ");
-				System.out.println(response.getFileList());
+				String fileListStr = response.getFileList();
+				
+				if (fileListStr != null && !fileListStr.trim().isEmpty()) {
+					String[] lineas = fileListStr.split("\n");
+					ArrayList<FileInfo> arrayFicheros = new ArrayList<>();
+					
+					for (String linea : lineas) {
+						if (linea.contains(":")) {
+							// El límite de 2 evita fallos si el nombre del fichero contiene ':'
+							String[] partes = linea.split(":", 2); 
+							String hash = partes[0].trim();
+							String nombre = partes[1].trim();
+							
+							// Creamos el objeto FileInfo con los datos extraídos
+							FileInfo fi = new FileInfo();
+							fi.fileHash = hash;
+							fi.fileName = nombre;
+							fi.fileSize = -1; // No se conoce
+							
+							arrayFicheros.add(fi);
+						}
+					}
+					
+					/* Convertimos a array y usamos el método printToSysout de FileInfo para imprimir con el 
+					mismo formato que dirfiles o myfiles */
+					FileInfo[] ficherosParaImprimir = arrayFicheros.toArray(new FileInfo[0]);
+					FileInfo.printToSysout(ficherosParaImprimir);	
+				} else {
+					System.out.println(" (This peer is not sharing any files yet)");
+				}
 				success = true;
 			}else {
 				System.err.println("Unexpected response code from the peer.");
@@ -186,19 +217,35 @@ public class NFControllerLogicP2P {
 				NFConnector connector = new NFConnector(serverAddr);
 				PeerMessage response = connector.requestDownload(targetHashSubstring);
 				if(response.getOpcode() == PeerMessageOps.OPCODE_DOWNLOAD_RESP) {
-					String fullHash = response.getHash();
+					String fullHashAndName = response.getHash();
 					long expectedSize = response.getFileSize();
 					
-					File downloadFolder = new File(NanoFiles.sharedDirname);
-					downloadFolder.mkdirs();
+					String hash = "";
+					// Intentamos obtener el nombre original. Si el servidor no lo manda, usamos un genérico.
+					String originalName = "descarga_desconocida.bin";
+					if(fullHashAndName.contains(":")) {
+						String[] parts = fullHashAndName.split(":", 2);
+						hash = parts[0];
+						originalName = parts[1];
+					}
+					// Separamos el nombre de la extensión para meter el _copiaX
+					String nameSinExtension = originalName;
+					String extension = "";
+					int dotIndex = originalName.lastIndexOf('.');
+					if(dotIndex > 0) {
+						nameSinExtension = originalName.substring(0, dotIndex);
+						extension = originalName.substring(dotIndex);
+					}
 					
-					String localFileName = "descarga_" + fullHash.substring(0,7) + ".bin";
+					File downloadFolder = new File(NanoFiles.sharedDirname);
+					String localFileName = originalName;
 					File localFile = new File(downloadFolder, localFileName);
 					
 					int index = 1;		
 					while(localFile.exists()) {
-						localFileName = "descarga_" + fullHash.substring(0, 7) + "_" + index + ".bin";
+						localFileName = nameSinExtension + "_copia" + index + extension;
 						localFile = new File(downloadFolder, localFileName);
+						index++;
 					}
 					
 					System.out.println("*Downloading file (Expected size: " + expectedSize + " bytes)...");
