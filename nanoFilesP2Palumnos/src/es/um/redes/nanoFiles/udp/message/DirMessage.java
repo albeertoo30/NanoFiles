@@ -1,7 +1,6 @@
 package es.um.redes.nanoFiles.udp.message;
 
-
-
+import java.util.Base64;
 
 /**
  * Clase que modela los mensajes del protocolo de comunicación entre pares para
@@ -32,6 +31,11 @@ public class DirMessage {
 	private static final String FIELDNAME_PORT = "port";
 	private static final String FIELDNAME_FILES = "files";
 	private static final String FIELDNAME_PEERS = "peers";
+	
+	public static final String FIELDNAME_FILEDATA = "data";
+	public static final String FIELDNAME_FILENAME = "filename";
+	public static final String FIELDNAME_FILEHASH = "hash";
+	public static final String FIELDNAME_FILESIZE = "filesize";
 
 	/**
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
@@ -49,6 +53,11 @@ public class DirMessage {
 	private int port;
 	private String files;
 	private String peers;
+	
+	private byte[] fileData = null;
+	private String fileName = null;
+	private String fileHash = null;
+	private long fileSize = -1;
 
 	public DirMessage(String op) {
 		operation = op;
@@ -141,6 +150,51 @@ public class DirMessage {
 		this.peers = peers;
 	}
 	
+	
+	public String getFileHash() { 
+		return fileHash; 
+	}
+	
+	public void setFileHash(String hash) {
+		if (!operation.equals(DirMessageOps.OPERATION_DIRDL) && !operation.equals(DirMessageOps.OPERATION_DIRDL_OK)) {
+			throw new RuntimeException("DirMessage: FileHash not allowed in operation " + operation);
+		}
+		this.fileHash = hash;
+	}
+
+	public String getFileName() { 
+		return fileName; 
+	}
+	
+	public void setFileName(String name) {
+		if (!operation.equals(DirMessageOps.OPERATION_DIRDL_OK)) {
+			throw new RuntimeException("DirMessage: FileName not allowed in operation " + operation);
+		}
+		this.fileName = name;
+	}
+
+	public long getFileSize() { 
+		return fileSize; 
+	}
+	
+	public void setFileSize(long size) {
+		if (!operation.equals(DirMessageOps.OPERATION_DIRDL_OK)) {
+			throw new RuntimeException("DirMessage: FileSize not allowed in operation " + operation);
+		}
+		this.fileSize = size;
+	}
+
+	public byte[] getFileData() { 
+		return fileData; 
+	}
+	
+	public void setFileData(byte[] data) {
+		if (!operation.equals(DirMessageOps.OPERATION_DIRDL_OK)) {
+			throw new RuntimeException("DirMessage: FileData not allowed in operation " + operation);
+		}
+		this.fileData = data;
+	}
+	
 	/**
 	 * Método que convierte un mensaje codificado como una cadena de caracteres, a
 	 * un objeto de la clase PeerMessage, en el cual los atributos correspondientes
@@ -194,7 +248,27 @@ public class DirMessage {
 				if (m != null) m.setPeers(value);
 				break;
 			}
-
+			case FIELDNAME_FILEHASH:{
+				if (m != null) m.setFileHash(value);
+				break;
+			}
+			case FIELDNAME_FILENAME:{
+				if (m != null) m.setFileName(value);
+				break;
+			}
+			case FIELDNAME_FILESIZE:{
+				if (m != null) m.setFileSize(Long.parseLong(value));
+				break;
+			}
+			case FIELDNAME_FILEDATA:{
+				if (m != null) {
+					// Convertimos de String a array de bytes
+					byte[] decodedBytes = Base64.getDecoder().decode(value);
+					m.setFileData(decodedBytes);
+				}
+				break;
+			}
+			
 			default:
 				System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
 				System.err.println("Message was:\n" + message);
@@ -245,6 +319,23 @@ public class DirMessage {
 			sb.append(FIELDNAME_PEERS + DELIMITER + peers + END_LINE);
 			break;
 		}
+		case DirMessageOps.OPERATION_DIRDL:{
+			sb.append(FIELDNAME_FILEHASH + DELIMITER + fileHash + END_LINE);
+			break;
+		}
+		case DirMessageOps.OPERATION_DIRDL_OK:{
+			sb.append(FIELDNAME_FILEHASH + DELIMITER + fileHash + END_LINE);
+			sb.append(FIELDNAME_FILENAME + DELIMITER + fileName + END_LINE);
+			sb.append(FIELDNAME_FILESIZE + DELIMITER + fileSize + END_LINE);
+			
+			// Codificamos los bytes a Base64 para enviarlos como texto (String)
+			if (fileData != null) {
+				String base64Data = Base64.getEncoder().encodeToString(fileData);
+				sb.append(FIELDNAME_FILEDATA + DELIMITER + base64Data + END_LINE);
+			}
+			break;
+		}
+		
 		default:
 			break;
 		}

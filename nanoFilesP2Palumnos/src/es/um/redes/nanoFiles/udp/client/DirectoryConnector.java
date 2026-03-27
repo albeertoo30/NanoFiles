@@ -473,9 +473,40 @@ public class DirectoryConnector {
 		long filesize = -1;
 		String filehash = null;
 
+		// 1) Crear el mensaje de solicitud, serializar y enviar
+		DirMessage msg = new DirMessage(DirMessageOps.OPERATION_DIRDL);
+		msg.setFileHash(hashSubstring);
+		
+		String msgString = msg.toString();
+		byte[] msgBytes = msgString.getBytes();
+		byte[] responseBytes = sendAndReceiveDatagrams(msgBytes);
 
-
-		return new DownloadedFile(filename, filesize, fileData, filehash);
+		// 2) Analizar la respuesta
+		if(responseBytes != null) {
+			String responseStr = new String(responseBytes);
+			DirMessage response = DirMessage.fromString(responseStr);
+			String operation = response.getOperation();
+			
+			if(operation.equals(DirMessageOps.OPERATION_DIRDL_OK)) {
+				// Recuperamos los datos del mensaje 
+				filename = response.getFileName();
+				filesize = response.getFileSize();
+				fileData = response.getFileData();
+				filehash = response.getFileHash();
+				
+				System.out.println("DirDL: Successfully received file data from Directory.");
+				return new DownloadedFile(filename, filesize, fileData, filehash);	
+			} else if (operation.equals(DirMessageOps.OPERATION_DIRDL_FAIL)) {
+				System.err.println("DirDL fail: Directory could not serve the file.");
+				return null;
+			} else {
+				System.err.println("DirDL error: unexpected operation " + operation);
+				return null;
+			}
+		} else {
+			System.err.println("DirDL error: no response from Directory.");
+			return null;
+		}
 	}
 
 	/**

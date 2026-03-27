@@ -7,6 +7,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -208,7 +209,7 @@ public class NFDirectoryServer {
 		 * servidor.
 		 */
 		String messageFromClient = new String(pkt.getData(), 0, pkt.getLength());
-		System.out.println("[Debug] Received:\n" + messageFromClient);
+		// System.out.println("[Debug] Received:\n" + messageFromClient);
 		DirMessage msgReceived = DirMessage.fromString(messageFromClient);
 		
 		/*
@@ -354,7 +355,58 @@ public class NFDirectoryServer {
 			System.out.println("Enviada lista de peers (" + registeredPeers.size() + " usuarios)");
 			break;
 		}
+		case DirMessageOps.OPERATION_DIRDL: {
+			String targetHash = msgReceived.getFileHash();
+			int matchCount = 0;
+			FileInfo matchedFile = null;
 
+			// 1) Buscamos el fichero en nuestro array directoryFiles
+			if (directoryFiles != null) {
+				for (FileInfo f : directoryFiles) {
+					if (f.fileHash.toLowerCase().startsWith(targetHash.toLowerCase())) {
+						matchCount++;
+						matchedFile = f;
+					}
+				}
+			}
+
+			// 2) Tomamos una decisión basada en las coincidencias
+			if (matchCount == 1) { // Éxito: se encuentra exactamente 1 fichero
+				
+				long maxSafeFileSize = (long) ((DirMessage.PACKET_MAX_SIZE - 1000) * 0.75);
+				if(matchedFile.fileSize > maxSafeFileSize) {
+					System.out.println("DirDL fail: File '" + matchedFile.fileName + "' is too large (" + matchedFile.fileSize + " bytes) for a single UDP datagram.");
+					msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_FAIL);
+				}else {
+					msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_OK);
+					msgToSend.setFileHash(matchedFile.fileHash);
+					msgToSend.setFileName(matchedFile.fileName);
+					msgToSend.setFileSize(matchedFile.fileSize);
+				
+					// 3) Leemos el fichero físico del disco duro
+					try {
+						File fileToRead = new File(matchedFile.filePath);
+						// Lo leemos de golpe
+						byte[] fileBytes = Files.readAllBytes(fileToRead.toPath());
+					
+						msgToSend.setFileData(fileBytes); 
+						System.out.println("DirDL: File '" + matchedFile.fileName + "' successfully packed and sent to client.");
+					} catch (IOException e) {
+						System.err.println("DirDL error: Could not read file from disk: " + e.getMessage());
+						msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_FAIL);
+					}
+				}
+			} else {
+				// Fallo: O no existe (0) o es ambiguo (>1)
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRDL_FAIL);
+				if (matchCount == 0) {
+					System.out.println("DirDL fail: No file matches the hash substring '" + targetHash + "'.");
+				} else {
+					System.out.println("DirDL fail: Ambiguous hash substring '" + targetHash + "' (" + matchCount + " matches).");
+				}
+			}
+			break;
+		}
 
 		default:
 			System.err.println("Unexpected message operation: \"" + operation + "\"");

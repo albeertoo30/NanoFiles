@@ -28,7 +28,9 @@ public class DirMessageOps {
 	public static final String OPERATION_PEERS_OK = "peersok";
 	public static final String OPERATION_PEERS_FAIL = "peersfail";
 	
-	// DONE: definir las operaciones del protocolo de directorio
-
+	// Operación dirdl
+	public static final String OPERATION_DIRDL = "dirdl";
+	public static final String OPERATION_DIRDL_OK = "dirdlok";
+	public static final String OPERATION_DIRDL_FAIL = "dirdlfail";
 
 }
