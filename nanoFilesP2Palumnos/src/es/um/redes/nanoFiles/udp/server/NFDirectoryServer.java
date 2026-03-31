@@ -295,6 +295,7 @@ public class NFDirectoryServer {
 			break;
 		}
 		case DirMessageOps.OPERATION_DIRFILES: {
+			/* DEJO EL CÓDIGO DEL DIRFILES BÁSICO POR SI ACASO
 			// 1) Preparar la respuesta OK
 			msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRFILES_OK);
 			
@@ -319,6 +320,55 @@ public class NFDirectoryServer {
 			}
 			
 			System.out.println("Filelist sent (" + (directoryFiles != null ? directoryFiles.length : 0) + " files)");
+			break; */
+			
+			// Este es el código del dirfiles ampliado
+			// 1) Preparar la respuesta OK
+			msgToSend = new DirMessage(DirMessageOps.OPERATION_DIRFILES_OK);
+			StringBuilder sb = new StringBuilder();
+						
+			if (directoryFiles != null && directoryFiles.length > 0) {
+				int requestedPage = msgReceived.getPage();
+				int totalPages = (int) Math.ceil((double) directoryFiles.length / DirMessage.FILES_PER_PAGE);
+				
+				if (requestedPage <= 0) {
+				requestedPage = 1;
+				}
+							
+				if (requestedPage > totalPages) {
+					requestedPage = totalPages;
+				}
+							
+				// Calculamos dónde empezamos a leer en el array y dónde terminamos
+				int startIndex = (requestedPage - 1) * DirMessage.FILES_PER_PAGE;
+				int endIndex = Math.min(startIndex + DirMessage.FILES_PER_PAGE, directoryFiles.length);
+							
+				// 2) Serializamos solo el trozo del array que nos toca
+				for (int i = startIndex; i < endIndex; i++) {
+					FileInfo f = directoryFiles[i];
+					sb.append(f.fileHash).append(":")
+					  .append(f.fileName).append(":")
+					  .append(f.fileSize).append(";");
+				}
+							
+				// Guardamos los datos de paginación en el mensaje
+				msgToSend.setPage(requestedPage);
+				msgToSend.setTotalPages(totalPages);
+				System.out.println("DirFiles: Sending page " + requestedPage + " of " + totalPages + " (" + (endIndex - startIndex) + " files)");				
+			} else {
+				// Si no hay ficheros, devolvemos página 1 de 1 vacía
+				msgToSend.setPage(1);
+				msgToSend.setTotalPages(1);
+				System.out.println("DirFiles: Directory is empty.");
+			}
+						
+			// 3) Meter la cadena en el mensaje
+			if (sb.length() > 0) {
+				msgToSend.setFiles(sb.toString());
+			} else {
+				msgToSend.setFiles("");
+			}
+						
 			break;
 		}
 		case DirMessageOps.OPERATION_PEERS: {
