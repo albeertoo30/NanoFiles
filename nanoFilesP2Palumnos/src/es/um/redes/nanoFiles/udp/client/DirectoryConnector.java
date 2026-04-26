@@ -7,8 +7,10 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import es.um.redes.nanoFiles.application.NanoFiles;
 import es.um.redes.nanoFiles.udp.message.DirMessage;
@@ -362,6 +364,7 @@ public class DirectoryConnector {
 	 *         pudo satisfacer nuestra solicitud
 	 */
 	public FileInfo[] getFileList() {
+		/* DEJO EL CÓDIGO DEL DIRFILES BÁSICO POR SI ACASO
 		FileInfo[] filelist = new FileInfo[0];
 		// DONE: Ver TODOs en pingDirectory y seguir esquema similar
 		
@@ -408,8 +411,81 @@ public class DirectoryConnector {
 			return null;
 		}
 
+		return filelist; */
+		
+		// Este es el código del dirfiles ampliado
+		
+		// Usamos un ArrayList porque no sabemos cuántos ficheros llegarán en total
+		List<FileInfo> accumulatedFiles = new ArrayList<>();
+			
+		int currentPage = 1;
+		int totalPages = 1; // Asumimos al menos 1 página hasta que el servidor nos diga lo contrario
+		boolean transferSuccessful = true;
 
-		return filelist;
+		// Bucle para pedir páginas hasta llegar al total
+		while (currentPage <= totalPages) {	
+			// 1) Crear el mensaje, serializar y enviar
+			DirMessage msg = new DirMessage(DirMessageOps.OPERATION_DIRFILES);
+			msg.setPage(currentPage);
+				
+			String msgString = msg.toString();
+			byte[] msgBytes = msgString.getBytes();
+			byte[] responseBytes = sendAndReceiveDatagrams(msgBytes);
+			
+			// 2) Analizar respuesta
+			if (responseBytes != null) {
+				String responseStr = new String(responseBytes);
+				DirMessage response = DirMessage.fromString(responseStr);
+				String operation = response.getOperation();
+				
+				if (operation.equals(DirMessageOps.OPERATION_DIRFILES_OK)) {
+					// Actualizamos el total de páginas con lo que nos diga el servidor
+					int receivedTotalPages = response.getTotalPages();
+					if (receivedTotalPages > 0) {
+						totalPages = receivedTotalPages;
+					}
+						
+					String filesStr = response.getFiles();
+					
+					// Deserializar: convertir de String a FileInfo y añadir a nuestra lista acumulativa
+					if (filesStr != null && !filesStr.trim().isEmpty()) {
+						String[] filesData = filesStr.split(";");
+						
+						for (int i = 0; i < filesData.length; i++) {
+							String[] filesParts = filesData[i].split(":");
+							if (filesParts.length >= 3) {
+								String hash = filesParts[0];
+								String name = filesParts[1];
+								long size = Long.parseLong(filesParts[2]);
+								accumulatedFiles.add(new FileInfo(hash, name, size, ""));
+							}
+						}
+					}
+					currentPage++; 
+				} else {
+					System.err.println("DirFiles fail: Unexpected operation " + operation);
+					transferSuccessful = false;
+					break;
+				}
+			} else {
+				System.err.println("DirFiles error: no response from Directory for page " + currentPage);
+				transferSuccessful = false;
+				break;
+			}
+		}
+		
+		if (!transferSuccessful) {
+			return null;
+		}
+
+		if (accumulatedFiles.isEmpty()) {
+			System.err.println("DirFiles: Directory is empty of files.");
+		} else {
+			System.out.println("DirFiles: Successfully received " + accumulatedFiles.size() + " files in total (" + totalPages + " pages).");
+		}
+
+		// Convertimos el ArrayList dinámico al array estático que devuelve el método
+		return accumulatedFiles.toArray(new FileInfo[0]);
 	}
 
 	public Map<String, InetSocketAddress> getPeerList() {

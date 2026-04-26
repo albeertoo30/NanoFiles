@@ -32,10 +32,16 @@ public class DirMessage {
 	private static final String FIELDNAME_FILES = "files";
 	private static final String FIELDNAME_PEERS = "peers";
 	
+	// Para el comando dirdl básico
 	public static final String FIELDNAME_FILEDATA = "data";
 	public static final String FIELDNAME_FILENAME = "filename";
 	public static final String FIELDNAME_FILEHASH = "hash";
 	public static final String FIELDNAME_FILESIZE = "filesize";
+	
+	// Para el comando dirfiles ampliado
+	private static final String FIELDNAME_PAGE = "page";
+	private static final String FIELDNAME_TOTALPAGES = "totalpages";
+	public static final int FILES_PER_PAGE = 10; // Se puede cambiar sin problema
 
 	/**
 	 * Tipo del mensaje, de entre los tipos definidos en PeerMessageOps.
@@ -54,13 +60,22 @@ public class DirMessage {
 	private String files;
 	private String peers;
 	
-	private byte[] fileData = null;
-	private String fileName = null;
-	private String fileHash = null;
-	private long fileSize = -1;
+	private byte[] fileData;
+	private String fileName;
+	private String fileHash;
+	private long fileSize;
+	
+	private int page;
+	private int totalPages;
 
 	public DirMessage(String op) {
 		operation = op;
+		this.fileData = null;
+		this.fileName = null;
+		this.fileHash = null;
+		this.fileSize = -1;
+		this.page = -1;
+		this.totalPages = -1;
 	}
 
 	/*
@@ -75,6 +90,12 @@ public class DirMessage {
 		this.operation = op;
 		this.nickname = nickname;
 		this.port = port;
+		this.fileData = null;
+		this.fileName = null;
+		this.fileHash = null;
+		this.fileSize = -1;
+		this.page = -1;
+		this.totalPages = -1;
 	}
 
 	/*Constructor para los mensajes de PING o cualquier otro que requiera enviar la 
@@ -82,6 +103,12 @@ public class DirMessage {
 	public DirMessage(String op, String protocolId) {
 		this.operation = op;
 		this.protocolId = protocolId;
+		this.fileData = null;
+		this.fileName = null;
+		this.fileHash = null;
+		this.fileSize = -1;
+		this.page = -1;
+		this.totalPages = -1;
 	}
 
 	public String getOperation() {
@@ -196,6 +223,29 @@ public class DirMessage {
 		this.fileData = data;
 	}
 	
+	
+	public int getPage() { 
+		return page; 
+	}
+	
+	public void setPage(int page) {
+		if (!operation.equals(DirMessageOps.OPERATION_DIRFILES) && !operation.equals(DirMessageOps.OPERATION_DIRFILES_OK)) {
+			throw new RuntimeException("DirMessage: Page not allowed in operation " + operation);
+		}
+		this.page = page;
+	}
+
+	public int getTotalPages() { 
+		return totalPages; 
+	}
+	
+	public void setTotalPages(int totalPages) {
+		if (!operation.equals(DirMessageOps.OPERATION_DIRFILES_OK)) {
+			throw new RuntimeException("DirMessage: TotalPages not allowed in operation " + operation);
+		}
+		this.totalPages = totalPages;
+	}
+	
 	/**
 	 * Método que convierte un mensaje codificado como una cadena de caracteres, a
 	 * un objeto de la clase PeerMessage, en el cual los atributos correspondientes
@@ -269,6 +319,14 @@ public class DirMessage {
 				}
 				break;
 			}
+			case FIELDNAME_PAGE:{
+				if (m != null) m.setPage(Integer.parseInt(value));
+				break;
+			}
+			case FIELDNAME_TOTALPAGES:{
+				if(m != null) m.setTotalPages(Integer.parseInt(value));
+				break;
+			}
 			
 			default:
 				System.err.println("PANIC: DirMessage.fromString - message with unknown field name " + fieldName);
@@ -312,8 +370,21 @@ public class DirMessage {
 			}
 			break;
 		}
+		case DirMessageOps.OPERATION_DIRFILES:{
+			if(page > 0) {
+				sb.append(FIELDNAME_PAGE + DELIMITER + page + END_LINE);
+			}
+			break;
+		}
 		case DirMessageOps.OPERATION_DIRFILES_OK:{
 			sb.append(FIELDNAME_FILES + DELIMITER + files + END_LINE);
+			
+			if (page > 0) {
+				sb.append(FIELDNAME_PAGE + DELIMITER + page + END_LINE);
+			}
+			if (totalPages > 0) {
+				sb.append(FIELDNAME_TOTALPAGES + DELIMITER + totalPages + END_LINE);
+			}
 			break;
 		}
 		case DirMessageOps.OPERATION_PEERS_OK:{
