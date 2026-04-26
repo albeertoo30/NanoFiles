@@ -111,7 +111,8 @@ public class DirMessage {
 	}
 	
 	public void setNickname(String nick) {
-		if(!operation.equals(DirMessageOps.OPERATION_SERVE) && !operation.equals(DirMessageOps.OPERATION_SERVE_OK)){
+		if(!operation.equals(DirMessageOps.OPERATION_SERVE) && !operation.equals(DirMessageOps.OPERATION_SERVE_OK)
+				&& !operation.equals(DirMessageOps.OPERATION_UNREGISTER)){
 			throw new RuntimeException("DirMessage: Nickname not allowed in operation " + operation);
 		}
 		this.nickname = nick;
@@ -332,6 +333,12 @@ public class DirMessage {
 			if (fileData != null) {
 				String base64Data = Base64.getEncoder().encodeToString(fileData);
 				sb.append(FIELDNAME_FILEDATA + DELIMITER + base64Data + END_LINE);
+			}
+			break;
+		}
+		case DirMessageOps.OPERATION_UNREGISTER: {
+			if (nickname != null) {
+				sb.append(FIELDNAME_NICK + DELIMITER + nickname + END_LINE);
 			}
 			break;
 		}

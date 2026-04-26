@@ -515,17 +515,27 @@ public class DirectoryConnector {
 	 * @return Verdadero si el directorio tiene registrado a este peer como servidor
 	 *         y ha dado de baja sus ficheros.
 	 */
-	public boolean unregisterFileServer() {
-		boolean success = false;
-
-
-
-
-		return success;
+	public boolean unregisterFileServer(String nickname) {
+	    boolean success = false;
+	    
+	    // 1) Creamos el mensaje usando el nickname que recibimos por parámetro
+	    DirMessage msg = new DirMessage(DirMessageOps.OPERATION_UNREGISTER, nickname, 0);
+	    
+	    String msgString = msg.toString();
+	    byte[] msgBytes = msgString.getBytes();
+	    
+	    // 2) Enviamos y esperamos confirmación
+	    byte[] responseBytes = sendAndReceiveDatagrams(msgBytes);
+	    
+	    if (responseBytes != null) {
+	        String responseStr = new String(responseBytes);
+	        DirMessage response = DirMessage.fromString(responseStr);
+	        if (response.getOperation().equals(DirMessageOps.OPERATION_UNREGISTER_OK)) {
+	            success = true;
+	        }
+	    }
+	    return success;
 	}
-
-
-
 
 
 }

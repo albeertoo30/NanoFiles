@@ -196,9 +196,9 @@ public class NFControllerLogicDir {
 	 * 
 	 * @return Éxito o fracaso de la operación
 	 */
-	protected boolean unregisterFileServer() {
+	protected boolean unregisterFileServer(String nickname) {
 		boolean result = false;
-		if (this.directoryConnector.unregisterFileServer()) {
+		if (this.directoryConnector.unregisterFileServer(nickname)) {
 			System.out.println("* File server successfully unregistered with the directory");
 			result = true;
 		} else {

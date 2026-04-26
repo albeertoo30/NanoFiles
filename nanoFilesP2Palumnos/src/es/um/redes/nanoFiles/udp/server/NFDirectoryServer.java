@@ -407,6 +407,22 @@ public class NFDirectoryServer {
 			}
 			break;
 		}
+		case DirMessageOps.OPERATION_UNREGISTER: {
+			// 1) Extraer el nickname del peer que se quiere dar de baja
+			String peerToUnregister = msgReceived.getNickname();
+			
+			// 2) Comprobar si realmente estaba registrado
+			if (peerToUnregister != null && registeredPeers.containsKey(peerToUnregister)) {
+				// Lo eliminamos del mapa de servidores activos
+				registeredPeers.remove(peerToUnregister);
+				System.out.println("Peer unregistered successfully: '" + peerToUnregister);
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_OK);
+			} else {
+				System.out.println("Unregister failed: Peer '" + peerToUnregister + "' was not serving files.");
+				msgToSend = new DirMessage(DirMessageOps.OPERATION_UNREGISTER_FAIL);
+			}
+			break;
+		}
 
 		default:
 			System.err.println("Unexpected message operation: \"" + operation + "\"");

@@ -182,7 +182,7 @@ public class NFController {
 			 */
 			if (controllerPeer.serving()) {
 				controllerPeer.stopFileServer();
-				commandSucceeded = controllerDir.unregisterFileServer();
+				commandSucceeded = controllerDir.unregisterFileServer(NanoFiles.peerNickname);
 			}
 			break;
 		case NFCommands.COM_NICK:

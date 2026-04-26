@@ -32,5 +32,10 @@ public class DirMessageOps {
 	public static final String OPERATION_DIRDL = "dirdl";
 	public static final String OPERATION_DIRDL_OK = "dirdlok";
 	public static final String OPERATION_DIRDL_FAIL = "dirdlfail";
+	
+	// Operación quit
+	public static final String OPERATION_UNREGISTER = "unregister";
+	public static final String OPERATION_UNREGISTER_OK = "unregisterok";
+	public static final String OPERATION_UNREGISTER_FAIL = "unregisterfail";
 
 }
