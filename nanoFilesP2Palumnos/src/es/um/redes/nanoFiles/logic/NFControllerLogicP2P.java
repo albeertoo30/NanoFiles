@@ -138,18 +138,22 @@ public class NFControllerLogicP2P {
 					
 					for (String linea : lineas) {
 						if (linea.contains(":")) {
-							// El límite de 2 evita fallos si el nombre del fichero contiene ':'
-							String[] partes = linea.split(":", 2); 
-							String hash = partes[0].trim();
-							String nombre = partes[1].trim();
-							
-							// Creamos el objeto FileInfo con los datos extraídos
-							FileInfo fi = new FileInfo();
-							fi.fileHash = hash;
-							fi.fileName = nombre;
-							fi.fileSize = -1; // No se conoce
-							
-							arrayFicheros.add(fi);
+							String[] partes = linea.split(":", 3); 
+							if (partes.length >= 2) {
+								FileInfo fi = new FileInfo();
+								fi.fileHash = partes[0].trim();
+								fi.fileName = partes[1].trim();
+								if (partes.length == 3) {
+									try {
+										fi.fileSize = Long.parseLong(partes[2].trim());
+									} catch (NumberFormatException e) {
+										fi.fileSize = -1; // Por si acaso hay un fallo al parsear el número
+									}
+								} else {
+									fi.fileSize = -1;
+								}
+								arrayFicheros.add(fi);
+							}
 						}
 					}
 					

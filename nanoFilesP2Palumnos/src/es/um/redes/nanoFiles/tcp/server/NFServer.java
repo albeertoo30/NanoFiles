@@ -200,7 +200,7 @@ public class NFServer implements Runnable {
 						FileInfo[] files = NanoFiles.db.getFiles();
 						StringBuilder sb = new StringBuilder();
 						for(FileInfo f : files) {
-							sb.append(f.fileHash).append(":").append(f.fileName).append("\n");
+							sb.append(f.fileHash).append(":").append(f.fileName).append(":").append(f.fileSize).append("\n");
 						}
 						PeerMessage response = new PeerMessage(PeerMessageOps.OPCODE_PEERFILES_RESP);
 						response.setFileList(sb.toString());
