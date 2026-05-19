@@ -12,24 +12,24 @@ El ecosistema se divide en dos componentes independientes que cooperan de forma 
 
 1. **Directory (Directorio Centralizado):** Actúa como un registro pasivo ("libreta de contactos"). Escucha en un puerto UDP fijo (6868), indexa en memoria los metadatos de los ficheros disponibles globales y mantiene un censo en tiempo real de los servidores activos.
 2. **NanoFiles (Nodo/Peer):** Actúa con un rol dual (cliente/servidor). Se comunica por UDP con el directorio para publicar su catálogo o buscar archivos, y levanta un servidor multihilo TCP para despachar transferencias directas a otros nodos.
-
-            ┌─────────────────────────────┐
-            │         Directory           │
-            │  (UDP · Puerto 6868 fijo)   │
-            │                             │
-            │  registeredPeers: Map<      │
-            │    nickname → IP:puertoTCP> │
-            │  directoryFiles: FileInfo[] │
-            └───────────┬─────────────────┘
-                        │  UDP (Texto ASCII)
-      ┌─────────────────┼──────────────────┐
-      │                 │                  │
- ┌────▼────┐       ┌────▼────┐       ┌────▼────┐
- │ Peer A  │       │ Peer B  │       │ Peer C  │
- │NFServer │◄──TCP─┤NFConnec.│       │         │
- │(efímero)│       │(cliente)│       │         │
- └─────────┘       └─────────┘       └─────────┘
-
+```text
+                ┌─────────────────────────────┐
+                │          Directory          │
+                │  (UDP · Puerto 6868 fijo)   │
+                │                             │
+                │  registeredPeers: Map<      │
+                │    nickname → IP:puertoTCP> │
+                │  directoryFiles: FileInfo[] │
+                └───────────┬─────────────────┘
+                            │  UDP (Texto ASCII)
+          ┌─────────────────┼──────────────────┐
+          │                 │                  │
+     ┌────▼────┐       ┌────▼────┐       ┌────▼────┐
+     │ Peer A  │       │ Peer B  │       │ Peer C  │
+     │NFServer │◄──TCP─┤NFConnec.│       │         │
+     │(efímero)│       │(cliente)│       │         │
+     └─────────┘       └─────────┘       └─────────┘
+```
 ---
 
 ## Características Principales & Decisiones de Diseño
